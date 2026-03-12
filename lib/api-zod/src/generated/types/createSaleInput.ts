@@ -5,7 +5,10 @@
  * Aakash Enterprises - Cold Drinks Inventory & Sales Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { SaleItem } from "./saleItem";
 
-export interface HealthStatus {
-  status: string;
+export interface CreateSaleInput {
+  customerId?: number | null;
+  items: SaleItem[];
+  notes?: string | null;
 }
