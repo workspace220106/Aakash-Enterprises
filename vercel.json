@@ -1,0 +1,15 @@
+{
+    "buildCommand": "pnpm run build",
+    "outputDirectory": "artifacts/aakash-enterprises/dist/public",
+    "framework": "vite",
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://aakash-enterprises-api.onrender.com/api/$1"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

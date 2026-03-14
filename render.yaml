@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aakash-enterprises-api
+    env: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: cd artifacts/api-server && pnpm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        sync: false
