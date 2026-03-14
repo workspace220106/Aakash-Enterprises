@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from "../../../../lib/db/src/index";
+import { db } from "@workspace/db";
 import { productsTable } from "@workspace/db/schema";
 import { eq, ilike, sql } from "drizzle-orm";
 
