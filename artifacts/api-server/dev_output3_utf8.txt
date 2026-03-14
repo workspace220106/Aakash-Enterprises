@@ -1,0 +1,47 @@
+﻿
+> api-server@0.0.0 dev C:\Users\araji\Aakash-Enterprises\artifacts\api-server
+> tsx watch src/index.ts
+
+node.exe : C:\Users\araji\
+Aakash-Enterprises\lib\db\
+src\index.ts:8
+At C:\Users\araji\AppData\
+Roaming\npm\pnpm.ps1:24 
+char:5
++     & "node$exe"  "$base
+dir/node_modules/pnpm/bin/
+pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (C  
+  :\Users\araji\...\src   
+ \index.ts:8:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  throw new Error(
+        ^
+
+Error: DATABASE_URL must 
+be set. Did you forget to 
+provision a database?
+    at <anonymous> (C:\Use
+rs\araji\Aakash-Enterprise
+s\lib\db\src\index.ts:8:9)
+    at ModuleJob.run (node
+:internal/modules/esm/modu
+le_job:430:25)
+    at async onImport.trac
+ePromise.__proto__ (node:i
+nternal/modules/esm/loader
+:661:26)
+    at async asyncRunEntry
+PointWithESMLoader (node:i
+nternal/modules/run_main:1
+01:5)
+
+Node.js v24.14.0

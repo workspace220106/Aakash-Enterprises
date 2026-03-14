@@ -1,0 +1,740 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Aakash Enterprises - Cold Drinks Inventory & Sales Management API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: products
+    description: Product/drink management
+  - name: customers
+    description: Customer management
+  - name: sales
+    description: Sales and billing
+  - name: analytics
+    description: Analytics and reports
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /products:
+    get:
+      operationId: getProducts
+      tags: [products]
+      summary: List all products
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    put:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductInput"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /customers:
+    get:
+      operationId: getCustomers
+      tags: [customers]
+      summary: List all customers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Create a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerInput"
+      responses:
+        "201":
+          description: Created customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      summary: Get a customer by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+    put:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerInput"
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+    delete:
+      operationId: deleteCustomer
+      tags: [customers]
+      summary: Delete a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /customers/{id}/sales:
+    get:
+      operationId: getCustomerSales
+      tags: [customers]
+      summary: Get sales history for a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SaleWithDetails"
+
+  /sales:
+    get:
+      operationId: getSales
+      tags: [sales]
+      summary: List all sales
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SaleWithDetails"
+    post:
+      operationId: createSale
+      tags: [sales]
+      summary: Record a new sale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSaleInput"
+      responses:
+        "201":
+          description: Created sale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleWithDetails"
+
+  /sales/{id}:
+    delete:
+      operationId: deleteSale
+      tags: [sales]
+      summary: Delete a sale
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /analytics/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [analytics]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /analytics/daily:
+    get:
+      operationId: getDailySales
+      tags: [analytics]
+      summary: Get daily sales for last 30 days
+      responses:
+        "200":
+          description: Daily sales data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailySalesData"
+
+  /analytics/monthly:
+    get:
+      operationId: getMonthlySales
+      tags: [analytics]
+      summary: Get monthly sales for last 12 months
+      responses:
+        "200":
+          description: Monthly sales data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonthlySalesData"
+
+  /analytics/top-products:
+    get:
+      operationId: getTopProducts
+      tags: [analytics]
+      summary: Get top selling products
+      responses:
+        "200":
+          description: Top products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopProduct"
+
+  /analytics/profit-margins:
+    get:
+      operationId: getProfitMargins
+      tags: [analytics]
+      summary: Get profit margin analysis per product
+      responses:
+        "200":
+          description: Profit margin data per product
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductProfitMargin"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: string
+        size:
+          type: string
+        purchasePrice:
+          type: number
+        sellingPrice:
+          type: number
+        stock:
+          type: integer
+        supplier:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - brand
+        - size
+        - purchasePrice
+        - sellingPrice
+        - stock
+        - supplier
+        - createdAt
+
+    CreateProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+        brand:
+          type: string
+        size:
+          type: string
+        purchasePrice:
+          type: number
+        sellingPrice:
+          type: number
+        stock:
+          type: integer
+        supplier:
+          type: string
+      required:
+        - name
+        - brand
+        - size
+        - purchasePrice
+        - sellingPrice
+        - stock
+        - supplier
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        shopName:
+          type: string
+        address:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - phone
+        - shopName
+        - address
+        - notes
+        - createdAt
+
+    CreateCustomerInput:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        shopName:
+          type: string
+        address:
+          type: string
+        notes:
+          type: string
+      required:
+        - name
+        - phone
+        - shopName
+        - address
+        - notes
+
+    SaleItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+      required:
+        - productId
+        - quantity
+        - price
+
+    CreateSaleInput:
+      type: object
+      properties:
+        customerId:
+          type: integer
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleItem"
+        notes:
+          type: string
+          nullable: true
+      required:
+        - items
+
+    SaleWithDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        total:
+          type: number
+        notes:
+          type: string
+          nullable: true
+        date:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleItemWithProduct"
+      required:
+        - id
+        - total
+        - date
+        - items
+
+    SaleItemWithProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+        total:
+          type: number
+      required:
+        - id
+        - productId
+        - productName
+        - quantity
+        - price
+        - total
+
+    DashboardStats:
+      type: object
+      properties:
+        todaySales:
+          type: number
+        todayDrinksSold:
+          type: integer
+        monthlySales:
+          type: number
+        stockRemaining:
+          type: integer
+        lowStockProducts:
+          type: array
+          items:
+            $ref: "#/components/schemas/LowStockProduct"
+        starProduct:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/StarProduct"
+      required:
+        - todaySales
+        - todayDrinksSold
+        - monthlySales
+        - stockRemaining
+        - lowStockProducts
+
+    LowStockProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: string
+        stock:
+          type: integer
+      required:
+        - id
+        - name
+        - brand
+        - stock
+
+    StarProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: string
+        quantitySold:
+          type: integer
+        revenue:
+          type: number
+      required:
+        - id
+        - name
+        - brand
+        - quantitySold
+        - revenue
+
+    DailySalesData:
+      type: object
+      properties:
+        date:
+          type: string
+        revenue:
+          type: number
+        quantitySold:
+          type: integer
+      required:
+        - date
+        - revenue
+        - quantitySold
+
+    MonthlySalesData:
+      type: object
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        quantitySold:
+          type: integer
+      required:
+        - month
+        - revenue
+        - quantitySold
+
+    TopProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: string
+        size:
+          type: string
+        quantitySold:
+          type: integer
+        revenue:
+          type: number
+      required:
+        - id
+        - name
+        - brand
+        - size
+        - quantitySold
+        - revenue
+
+    ProductProfitMargin:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: string
+        size:
+          type: string
+        purchasePrice:
+          type: number
+        sellingPrice:
+          type: number
+        profitPerUnit:
+          type: number
+        profitMarginPercent:
+          type: number
+        totalUnitsSold:
+          type: integer
+        totalRevenue:
+          type: number
+        totalProfit:
+          type: number
+        stock:
+          type: integer
+      required:
+        - id
+        - name
+        - brand
+        - size
+        - purchasePrice
+        - sellingPrice
+        - profitPerUnit
+        - profitMarginPercent
+        - totalUnitsSold
+        - totalRevenue
+        - totalProfit
+        - stock

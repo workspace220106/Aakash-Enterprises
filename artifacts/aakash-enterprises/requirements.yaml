@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For smooth page transitions, stagger effects, and animated counters to give the app a premium feel."
+  "recharts": "For rendering beautiful daily, monthly, and top-product charts."
+  "date-fns": "For date formatting in sales history and dashboards."
+  "clsx": "For conditional class name joining."
+  "tailwind-merge": "For merging tailwind classes in reusable components."
+
+images:
+  - path: "artifacts/aakash-enterprises/public/images/bg-blobs.png"
+    description: "Abstract vibrant soft gradient blobs in cola red, soda blue, and lime green on a transparent background, to be used as a subtle background decoration for a glassmorphism UI."
+    aspect_ratio: "16:9"
+  - path: "artifacts/aakash-enterprises/public/images/star-badge.png"
+    description: "A shiny, premium looking 3D golden star badge with subtle sparkles, transparent background, used for marking the star product of the month."
+    aspect_ratio: "1:1"
+
+notes:
+  - "Assuming @workspace/api-client-react provides all generated hooks natively."
+  - "Using Framer Motion for entrance animations."
+  - "Implementing glassmorphism heavily for a modern, 'refreshing' cold-drink app aesthetic."

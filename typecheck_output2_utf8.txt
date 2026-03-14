@@ -1,0 +1,66 @@
+﻿
+> workspace@0.0.0 typecheck C:\Users\araji\Aakash-Enterprises
+> pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --filter "./scripts" --if-present run typecheck
+
+
+> workspace@0.0.0 typecheck:libs C:\Users\araji\Aakash-Enterprises
+> tsc --build
+
+Scope: 4 of 9 workspace projects
+artifacts/aakash-enterprises typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+scripts typecheck$ tsc -p tsconfig.json --noEmit
+scripts typecheck: Done
+artifacts/api-server typecheck: src/app.ts(2,18): error TS2307: Cannot find module 'cors' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/analytics.ts(2,20): error TS2307: Cannot find module '@workspace/db' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/analytics.ts(3,59): error TS2307: Cannot find module '@workspace/db/schema' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/analytics.ts(113,23): error TS7006: Parameter 'r' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/analytics.ts(115,24): error TS7006: Parameter 'r' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/analytics.ts(147,23): error TS7006: Parameter 'r' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/analytics.ts(149,24): error TS7006: Parameter 'r' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/analytics.ts(173,23): error TS7006: Parameter 'row' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/analytics.ts(205,29): error TS7006: Parameter 's' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/analytics.ts(209,34): error TS7006: Parameter 'p' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/customers.ts(3,75): error TS2307: Cannot find module '@workspace/db/schema' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/customers.ts(16,16): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: any) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/customers.ts(39,69): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: any) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/customers.ts(53,14): error TS2345: Argument of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to parameter of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:   Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/customers.ts(64,43): error TS2345: Argument of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to parameter of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:   Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/customers.ts(74,60): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: any) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/customers.ts(88,36): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: any; productId: any; productName: any; quantity: any; price: any; total: any; }) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/customers.ts(89,18): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: any; productId: any; productName: any; quantity: any; price: any; total: any; }) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/health.ts(2,37): error TS2307: Cannot find module '@workspace/api-zod' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/products.ts(3,31): error TS2307: Cannot find module '@workspace/db/schema' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/products.ts(16,16): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: any) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/products.ts(54,67): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: any) => SQL<unknown> | undefined) | undefined'.
+artifacts/api-server typecheck:   Type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:     Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/products.ts(68,14): error TS2345: Argument of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to parameter of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:   Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/products.ts(78,42): error TS2345: Argument of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.30.10_@types+_219adf7d1738cf7efa71ef8fe075d9c7/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to parameter of type 'import("C:/Users/araji/Aakash-Enterprises/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+artifacts/api-server typecheck:   Types have separate declarations of a private property 'shouldInlineParams'.
+artifacts/api-server typecheck: src/routes/sales.ts(2,20): error TS2307: Cannot find module '@workspace/db' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/sales.ts(3,75): error TS2307: Cannot find module '@workspace/db/schema' or its corresponding type declarations.
+artifacts/api-server typecheck: src/routes/sales.ts(24,24): error TS7006: Parameter 'sale' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/sales.ts(51,29): error TS7006: Parameter 'i' implicitly has an 'any' type.
+artifacts/api-server typecheck: src/routes/sales.ts(119,29): error TS7006: Parameter 'i' implicitly has an 'any' type.
+artifacts/api-server typecheck: Failed
+C:\Users\araji\Aakash-Enterprises\artifacts\api-server:
+ΓÇëERR_PNPM_RECURSIVE_RUN_FIRST_FAILΓÇë api-server@0.0.0 typecheck: `tsc -p tsconfig.json --noEmit`
+Exit status 2
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 2.
