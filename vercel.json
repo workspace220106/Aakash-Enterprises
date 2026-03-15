@@ -5,7 +5,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "https://aakash-enterprises-api.onrender.com/api/$1"
+            "destination": "https://aakash-enterprises-api.onrender.com/$1"
         },
         {
             "source": "/(.*)",
