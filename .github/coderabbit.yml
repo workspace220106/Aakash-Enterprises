@@ -1,0 +1,10 @@
+# CodeRabbit Configuration
+# For more information, visit https://coderabbit.ai/docs/configuration/
+
+reviews:
+  profile: "chill"
+  request_reviews_from_ai: true
+  auto_review: true
+
+chat:
+  enabled: true
