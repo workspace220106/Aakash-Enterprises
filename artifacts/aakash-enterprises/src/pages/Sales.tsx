@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useGetSales, useDeleteSale, getGetSalesQueryKey } from "@workspace/api-client-react";
+import { useGetSales, useDeleteSale, getGetSalesQueryKey, type SaleWithDetails } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Calendar, Trash2, FileText } from "lucide-react";
 import { motion } from "framer-motion";
+import { ReceiptDialog } from "@/components/ReceiptDialog";
 
 export default function Sales() {
   const { data: sales, isLoading } = useGetSales();
@@ -11,6 +12,8 @@ export default function Sales() {
   const deleteMutation = useDeleteSale({ mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() }) } });
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedSaleForReceipt, setSelectedSaleForReceipt] = useState<SaleWithDetails | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -80,7 +83,12 @@ export default function Sales() {
                     <td className="p-4 font-bold text-slate-800 text-lg">{formatCurrency(sale.total)}</td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2" onClick={e => e.stopPropagation()}>
-                        <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><FileText className="w-4 h-4"/></button>
+                        <button 
+                          onClick={() => { setSelectedSaleForReceipt(sale); setShowReceipt(true); }}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <FileText className="w-4 h-4"/>
+                        </button>
                         <button 
                           onClick={() => { if(confirm('Are you sure you want to delete this sale record?')) deleteMutation.mutate({ id: sale.id }) }} 
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -96,6 +104,12 @@ export default function Sales() {
           </table>
         </div>
       </div>
+
+      <ReceiptDialog 
+        open={showReceipt} 
+        onOpenChange={setShowReceipt} 
+        sale={selectedSaleForReceipt}
+      />
     </div>
   );
 }

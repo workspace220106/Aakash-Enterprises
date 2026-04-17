@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useGetProducts, useGetCustomers, useCreateSale, getGetProductsQueryKey, getGetDashboardStatsQueryKey } from "@workspace/api-client-react";
+import { useGetProducts, useGetCustomers, useCreateSale, getGetProductsQueryKey, getGetDashboardStatsQueryKey, type SaleWithDetails } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Search, ShoppingBag, Trash2, Plus, Minus, UserCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ReceiptDialog } from "@/components/ReceiptDialog";
 
 export default function POS() {
   const [search, setSearch] = useState("");
@@ -11,14 +12,18 @@ export default function POS() {
   const { data: customers } = useGetCustomers();
   
   const queryClient = useQueryClient();
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastSale, setLastSale] = useState<SaleWithDetails | null>(null);
+
   const createSaleMutation = useCreateSale({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getGetProductsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
         setCart([]);
         setSelectedCustomer("");
-        alert("Bill generated successfully!");
+        setLastSale(data);
+        setShowReceipt(true);
       }
     }
   });
@@ -191,6 +196,12 @@ export default function POS() {
           </div>
         </div>
       </div>
+      
+      <ReceiptDialog 
+        open={showReceipt} 
+        onOpenChange={setShowReceipt} 
+        sale={lastSale}
+      />
     </div>
   );
 }
