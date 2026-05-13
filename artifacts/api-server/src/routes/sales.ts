@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { salesTable, saleItemsTable, productsTable, customersTable } from "@workspace/db/schema";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -15,53 +15,66 @@ router.get("/sales", async (req, res) => {
     if (customerId) conditions.push(eq(salesTable.customerId, parseInt(customerId as string)));
 
     const sales = await db
-      .select()
+      .select({
+        id: salesTable.id,
+        customerId: salesTable.customerId,
+        customerName: customersTable.name,
+        total: salesTable.total,
+        notes: salesTable.notes,
+        date: salesTable.date
+      })
       .from(salesTable)
+      .leftJoin(customersTable, eq(salesTable.customerId, customersTable.id))
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(salesTable.date);
 
-    const result = await Promise.all(
-      sales.map(async (sale: any) => {
-        const items = await db
-          .select({
-            id: saleItemsTable.id,
-            productId: saleItemsTable.productId,
-            productName: productsTable.name,
-            quantity: saleItemsTable.quantity,
-            price: saleItemsTable.price,
-            total: saleItemsTable.total,
-          })
-          .from(saleItemsTable)
-          .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
-          .where(eq(saleItemsTable.saleId, sale.id));
+    if (sales.length === 0) {
+      return res.json([]);
+    }
 
-        let customerName: string | null = null;
-        if (sale.customerId) {
-          const [customer] = await db.select().from(customersTable).where(eq(customersTable.id, sale.customerId));
-          customerName = customer?.name ?? null;
-        }
+    const saleIds = sales.map(s => s.id);
 
-        return {
-          id: sale.id,
-          customerId: sale.customerId,
-          customerName,
-          total: parseFloat(sale.total),
-          notes: sale.notes,
-          date: sale.date.toISOString(),
-          items: items.map((i: any) => ({
-            id: i.id,
-            productId: i.productId,
-            productName: i.productName ?? "",
-            quantity: i.quantity,
-            price: parseFloat(i.price),
-            total: parseFloat(i.total),
-          })),
-        };
+    const items = await db
+      .select({
+        id: saleItemsTable.id,
+        saleId: saleItemsTable.saleId,
+        productId: saleItemsTable.productId,
+        productName: productsTable.name,
+        quantity: saleItemsTable.quantity,
+        price: saleItemsTable.price,
+        total: saleItemsTable.total,
       })
-    );
-    res.json(result);
-  } catch {
-    res.status(500).json({ message: "Failed to fetch sales" });
+      .from(saleItemsTable)
+      .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
+      .where(inArray(saleItemsTable.saleId, saleIds));
+
+    const itemsBySaleId = items.reduce((acc, item) => {
+      if (!acc[item.saleId]) acc[item.saleId] = [];
+      acc[item.saleId].push({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName ?? "",
+        quantity: item.quantity,
+        price: parseFloat(item.price),
+        total: parseFloat(item.total),
+      });
+      return acc;
+    }, {} as Record<number, any[]>);
+
+    const result = sales.map(sale => ({
+      id: sale.id,
+      customerId: sale.customerId,
+      customerName: sale.customerName,
+      total: parseFloat(sale.total),
+      notes: sale.notes,
+      date: sale.date.toISOString(),
+      items: itemsBySaleId[sale.id] || []
+    }));
+
+    return res.json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to fetch sales" });
   }
 });
 

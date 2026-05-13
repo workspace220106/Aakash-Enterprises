@@ -14,60 +14,74 @@ router.get("/analytics/dashboard", async (req, res) => {
 
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [todayStats] = await db
-      .select({
-        revenue: sql<string>`COALESCE(SUM(${salesTable.total}), 0)`,
-        count: sql<string>`COALESCE(COUNT(${salesTable.id}), 0)`,
-      })
-      .from(salesTable)
-      .where(and(gte(salesTable.date, today), lte(salesTable.date, tomorrow)));
+    const [
+      todayStatsResult,
+      todayItemsResult,
+      monthlyStatsResult,
+      stockResultResult,
+      lowStockProducts,
+      topProductThisMonth
+    ] = await Promise.all([
+      db
+        .select({
+          revenue: sql<string>`COALESCE(SUM(${salesTable.total}), 0)`,
+          count: sql<string>`COALESCE(COUNT(${salesTable.id}), 0)`,
+        })
+        .from(salesTable)
+        .where(and(gte(salesTable.date, today), lte(salesTable.date, tomorrow))),
+      
+      db
+        .select({ qty: sql<string>`COALESCE(SUM(${saleItemsTable.quantity}), 0)` })
+        .from(saleItemsTable)
+        .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
+        .where(and(gte(salesTable.date, today), lte(salesTable.date, tomorrow))),
+        
+      db
+        .select({ revenue: sql<string>`COALESCE(SUM(${salesTable.total}), 0)` })
+        .from(salesTable)
+        .where(gte(salesTable.date, monthStart)),
+        
+      db
+        .select({ totalStock: sql<string>`COALESCE(SUM(${productsTable.stock}), 0)` })
+        .from(productsTable),
+        
+      db
+        .select({ id: productsTable.id, name: productsTable.name, brand: productsTable.brand, stock: productsTable.stock })
+        .from(productsTable)
+        .where(lte(productsTable.stock, 20))
+        .orderBy(productsTable.stock),
+        
+      db
+        .select({
+          productId: saleItemsTable.productId,
+          qty: sql<string>`SUM(${saleItemsTable.quantity})`,
+          rev: sql<string>`SUM(${saleItemsTable.total})`,
+          name: productsTable.name,
+          brand: productsTable.brand
+        })
+        .from(saleItemsTable)
+        .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
+        .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
+        .where(gte(salesTable.date, monthStart))
+        .groupBy(saleItemsTable.productId, productsTable.name, productsTable.brand)
+        .orderBy(desc(sql`SUM(${saleItemsTable.quantity})`))
+        .limit(1)
+    ]);
 
-    const todayItems = await db
-      .select({ qty: sql<string>`COALESCE(SUM(${saleItemsTable.quantity}), 0)` })
-      .from(saleItemsTable)
-      .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
-      .where(and(gte(salesTable.date, today), lte(salesTable.date, tomorrow)));
-
-    const [monthlyStats] = await db
-      .select({ revenue: sql<string>`COALESCE(SUM(${salesTable.total}), 0)` })
-      .from(salesTable)
-      .where(gte(salesTable.date, monthStart));
-
-    const stockResult = await db
-      .select({ totalStock: sql<string>`COALESCE(SUM(${productsTable.stock}), 0)` })
-      .from(productsTable);
-
-    const lowStockProducts = await db
-      .select({ id: productsTable.id, name: productsTable.name, brand: productsTable.brand, stock: productsTable.stock })
-      .from(productsTable)
-      .where(lte(productsTable.stock, 20))
-      .orderBy(productsTable.stock);
-
-    const topProductThisMonth = await db
-      .select({
-        productId: saleItemsTable.productId,
-        qty: sql<string>`SUM(${saleItemsTable.quantity})`,
-        rev: sql<string>`SUM(${saleItemsTable.total})`,
-      })
-      .from(saleItemsTable)
-      .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
-      .where(gte(salesTable.date, monthStart))
-      .groupBy(saleItemsTable.productId)
-      .orderBy(desc(sql`SUM(${saleItemsTable.quantity})`))
-      .limit(1);
+    const todayStats = todayStatsResult[0];
+    const todayItems = todayItemsResult;
+    const monthlyStats = monthlyStatsResult[0];
+    const stockResult = stockResultResult;
 
     let starProduct = null;
     if (topProductThisMonth.length > 0) {
-      const [product] = await db.select().from(productsTable).where(eq(productsTable.id, topProductThisMonth[0].productId));
-      if (product) {
-        starProduct = {
-          id: product.id,
-          name: product.name,
-          brand: product.brand,
-          quantitySold: parseInt(topProductThisMonth[0].qty),
-          revenue: parseFloat(topProductThisMonth[0].rev),
-        };
-      }
+      starProduct = {
+        id: topProductThisMonth[0].productId,
+        name: topProductThisMonth[0].name,
+        brand: topProductThisMonth[0].brand,
+        quantitySold: parseInt(topProductThisMonth[0].qty),
+        revenue: parseFloat(topProductThisMonth[0].rev),
+      };
     }
 
     res.json({
@@ -89,25 +103,27 @@ router.get("/analytics/daily", async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const rows = await db
-      .select({
-        date: sql<string>`DATE(${salesTable.date})`,
-        revenue: sql<string>`SUM(${salesTable.total})`,
-      })
-      .from(salesTable)
-      .where(gte(salesTable.date, thirtyDaysAgo))
-      .groupBy(sql`DATE(${salesTable.date})`)
-      .orderBy(sql`DATE(${salesTable.date})`);
-
-    const itemRows = await db
-      .select({
-        date: sql<string>`DATE(${salesTable.date})`,
-        qty: sql<string>`SUM(${saleItemsTable.quantity})`,
-      })
-      .from(saleItemsTable)
-      .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
-      .where(gte(salesTable.date, thirtyDaysAgo))
-      .groupBy(sql`DATE(${salesTable.date})`);
+    const [rows, itemRows] = await Promise.all([
+      db
+        .select({
+          date: sql<string>`DATE(${salesTable.date})`,
+          revenue: sql<string>`SUM(${salesTable.total})`,
+        })
+        .from(salesTable)
+        .where(gte(salesTable.date, thirtyDaysAgo))
+        .groupBy(sql`DATE(${salesTable.date})`)
+        .orderBy(sql`DATE(${salesTable.date})`),
+        
+      db
+        .select({
+          date: sql<string>`DATE(${salesTable.date})`,
+          qty: sql<string>`SUM(${saleItemsTable.quantity})`,
+        })
+        .from(saleItemsTable)
+        .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
+        .where(gte(salesTable.date, thirtyDaysAgo))
+        .groupBy(sql`DATE(${salesTable.date})`)
+    ]);
 
     const qtyMap: Record<string, number> = {};
     itemRows.forEach((r: any) => { qtyMap[r.date] = parseInt(r.qty); });
@@ -124,24 +140,26 @@ router.get("/analytics/daily", async (req, res) => {
 
 router.get("/analytics/monthly", async (req, res) => {
   try {
-    const rows = await db
-      .select({
-        month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
-        revenue: sql<string>`SUM(${salesTable.total})`,
-      })
-      .from(salesTable)
-      .groupBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
-      .orderBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
-      .limit(12);
-
-    const itemRows = await db
-      .select({
-        month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
-        qty: sql<string>`SUM(${saleItemsTable.quantity})`,
-      })
-      .from(saleItemsTable)
-      .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
-      .groupBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`);
+    const [rows, itemRows] = await Promise.all([
+      db
+        .select({
+          month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
+          revenue: sql<string>`SUM(${salesTable.total})`,
+        })
+        .from(salesTable)
+        .groupBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
+        .orderBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
+        .limit(12),
+        
+      db
+        .select({
+          month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
+          qty: sql<string>`SUM(${saleItemsTable.quantity})`,
+        })
+        .from(saleItemsTable)
+        .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
+        .groupBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
+    ]);
 
     const qtyMap: Record<string, number> = {};
     itemRows.forEach((r: any) => { qtyMap[r.month] = parseInt(r.qty); });
@@ -163,25 +181,25 @@ router.get("/analytics/top-products", async (req, res) => {
         productId: saleItemsTable.productId,
         qty: sql<string>`SUM(${saleItemsTable.quantity})`,
         rev: sql<string>`SUM(${saleItemsTable.total})`,
+        name: productsTable.name,
+        brand: productsTable.brand,
+        size: productsTable.size
       })
       .from(saleItemsTable)
-      .groupBy(saleItemsTable.productId)
+      .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
+      .groupBy(saleItemsTable.productId, productsTable.name, productsTable.brand, productsTable.size)
       .orderBy(desc(sql`SUM(${saleItemsTable.quantity})`))
       .limit(10);
 
-    const result = await Promise.all(
-      rows.map(async (row: any) => {
-        const [product] = await db.select().from(productsTable).where(eq(productsTable.id, row.productId));
-        return {
-          id: row.productId,
-          name: product?.name ?? "Unknown",
-          brand: product?.brand ?? "",
-          size: product?.size ?? "",
-          quantitySold: parseInt(row.qty),
-          revenue: parseFloat(row.rev),
-        };
-      })
-    );
+    const result = rows.map((row: any) => ({
+      id: row.productId,
+      name: row.name ?? "Unknown",
+      brand: row.brand ?? "",
+      size: row.size ?? "",
+      quantitySold: parseInt(row.qty),
+      revenue: parseFloat(row.rev),
+    }));
+    
     res.json(result);
   } catch {
     res.status(500).json({ message: "Failed to fetch top products" });
@@ -190,16 +208,17 @@ router.get("/analytics/top-products", async (req, res) => {
 
 router.get("/analytics/profit-margins", async (req, res) => {
   try {
-    const products = await db.select().from(productsTable).orderBy(productsTable.name);
-
-    const salesByProduct = await db
-      .select({
-        productId: saleItemsTable.productId,
-        totalQty: sql<string>`SUM(${saleItemsTable.quantity})`,
-        totalRevenue: sql<string>`SUM(${saleItemsTable.total})`,
-      })
-      .from(saleItemsTable)
-      .groupBy(saleItemsTable.productId);
+    const [products, salesByProduct] = await Promise.all([
+      db.select().from(productsTable).orderBy(productsTable.name),
+      db
+        .select({
+          productId: saleItemsTable.productId,
+          totalQty: sql<string>`SUM(${saleItemsTable.quantity})`,
+          totalRevenue: sql<string>`SUM(${saleItemsTable.total})`,
+        })
+        .from(saleItemsTable)
+        .groupBy(saleItemsTable.productId)
+    ]);
 
     const salesMap: Record<number, { qty: number; revenue: number }> = {};
     salesByProduct.forEach((s: any) => {

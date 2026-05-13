@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { customersTable, salesTable, saleItemsTable, productsTable } from "@workspace/db/schema";
-import { eq, ilike } from "drizzle-orm";
+import { eq, ilike, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -73,42 +73,51 @@ router.get("/customers/:id/sales", async (req, res) => {
     const customerId = parseInt(req.params.id);
     const sales = await db.select().from(salesTable).where(eq(salesTable.customerId, customerId)).orderBy(salesTable.date);
 
-    const result = await Promise.all(
-      sales.map(async (sale) => {
-        const items = await db
-          .select({
-            id: saleItemsTable.id,
-            productId: saleItemsTable.productId,
-            productName: productsTable.name,
-            quantity: saleItemsTable.quantity,
-            price: saleItemsTable.price,
-            total: saleItemsTable.total,
-          })
-          .from(saleItemsTable)
-          .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
-          .where(eq(saleItemsTable.saleId, sale.id));
+    if (sales.length === 0) return res.json([]);
 
-        return {
-          id: sale.id,
-          customerId: sale.customerId,
-          customerName: null,
-          total: parseFloat(sale.total),
-          notes: sale.notes,
-          date: sale.date.toISOString(),
-          items: items.map((i) => ({
-            id: i.id,
-            productId: i.productId,
-            productName: i.productName ?? "",
-            quantity: i.quantity,
-            price: parseFloat(i.price),
-            total: parseFloat(i.total),
-          })),
-        };
+    const saleIds = sales.map(s => s.id);
+
+    const items = await db
+      .select({
+        id: saleItemsTable.id,
+        saleId: saleItemsTable.saleId,
+        productId: saleItemsTable.productId,
+        productName: productsTable.name,
+        quantity: saleItemsTable.quantity,
+        price: saleItemsTable.price,
+        total: saleItemsTable.total,
       })
-    );
-    res.json(result);
-  } catch {
-    res.status(500).json({ message: "Failed to fetch customer sales" });
+      .from(saleItemsTable)
+      .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
+      .where(inArray(saleItemsTable.saleId, saleIds));
+
+    const itemsBySaleId = items.reduce((acc, item) => {
+      if (!acc[item.saleId]) acc[item.saleId] = [];
+      acc[item.saleId].push({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName ?? "",
+        quantity: item.quantity,
+        price: parseFloat(item.price),
+        total: parseFloat(item.total),
+      });
+      return acc;
+    }, {} as Record<number, any[]>);
+
+    const result = sales.map(sale => ({
+      id: sale.id,
+      customerId: sale.customerId,
+      customerName: null,
+      total: parseFloat(sale.total),
+      notes: sale.notes,
+      date: sale.date.toISOString(),
+      items: itemsBySaleId[sale.id] || []
+    }));
+
+    return res.json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to fetch customer sales" });
   }
 });
 
