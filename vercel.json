@@ -1,0 +1,11 @@
+{
+  "outputDirectory": "artifacts/aakash-enterprises/public",
+  "framework": "vite",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/artifacts/aakash-enterprises/public/index.html"
+    }
+  ]
+}
