@@ -389,6 +389,9 @@ importers:
       pg:
         specifier: ^8.11.5
         version: 8.20.0
+      tsx:
+        specifier: ^4.7.1
+        version: 4.21.0
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -399,9 +402,6 @@ importers:
       '@types/node':
         specifier: ^20.11.30
         version: 20.19.37
-      tsx:
-        specifier: ^4.7.1
-        version: 4.21.0
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
