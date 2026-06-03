@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Calculator, X, Delete } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -42,28 +42,31 @@ export function CalculatorWidget() {
     else setDisplay("0");
   };
 
+  const calcRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen && calcRef.current) {
+      calcRef.current.focus();
+    }
+  }, [isOpen]);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= '0' && e.key <= '9') handleNum(e.key);
-      else if (e.key === '.') handleNum(e.key);
-      else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
-        e.preventDefault();
-        handleOp(e.key);
-      }
-      else if (e.key === 'Enter' || e.key === '=') {
-        e.preventDefault();
-        calculate();
-      }
-      else if (e.key === 'Backspace') backspace();
-      else if (e.key === 'Delete') clear();
-      else if (e.key === 'Escape') setIsOpen(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, display, equation]);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key >= '0' && e.key <= '9') handleNum(e.key);
+    else if (e.key === '.') handleNum(e.key);
+    else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+      e.preventDefault();
+      handleOp(e.key);
+    }
+    else if (e.key === 'Enter' || e.key === '=') {
+      e.preventDefault();
+      calculate();
+    }
+    else if (e.key === 'Backspace') backspace();
+    else if (e.key === 'Delete' || e.key === 'Escape') {
+      if (e.key === 'Escape') setIsOpen(false);
+      else clear();
+    }
+  };
 
   const btnClass = "h-12 rounded-xl font-display font-semibold text-lg hover:bg-slate-100 active:scale-95 transition-all bg-white border border-slate-200 shadow-sm text-slate-700";
   const opClass = "h-12 rounded-xl font-display font-semibold text-lg bg-primary/10 text-primary hover:bg-primary/20 active:scale-95 transition-all border border-primary/20 shadow-sm";
@@ -73,10 +76,13 @@ export function CalculatorWidget() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={calcRef}
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="mb-4 w-72 glass-panel p-5 shadow-2xl shadow-primary/10 border-white/60"
+            className="mb-4 w-72 glass-panel p-5 shadow-2xl shadow-primary/10 border-white/60 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-2xl"
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-display font-bold text-slate-700 flex items-center gap-2">
