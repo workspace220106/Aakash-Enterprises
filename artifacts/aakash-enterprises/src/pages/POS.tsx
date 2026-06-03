@@ -60,17 +60,17 @@ export default function POS() {
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const [customTotalStr, setCustomTotalStr] = useState<string>("");
 
-  // Reset custom total only when cart is cleared entirely
+  // When cart is cleared, reset the custom amount
   useEffect(() => {
-    if (cart.length === 0) {
-      setCustomTotalStr("");
-    }
-  }, [cart.length === 0]);
+    setCustomTotalStr("");
+  }, [cart.length === 0 ? 1 : 0]);
 
-  // The effective total to send: user-entered value takes priority
-  const effectiveTotal = customTotalStr !== "" && !isNaN(parseFloat(customTotalStr))
-    ? parseFloat(customTotalStr)
-    : total;
+  // Use the typed value if valid, else fall back to calculated total
+  const effectiveTotal = (() => {
+    if (customTotalStr.trim() === "") return total;
+    const parsed = parseFloat(customTotalStr);
+    return isNaN(parsed) ? total : parsed;
+  })();
 
   const handleGenerateBill = () => {
     if (cart.length === 0) return;
@@ -190,24 +190,20 @@ export default function POS() {
         <div className="p-5 bg-slate-50 border-t border-slate-200">
           <div className="flex justify-between items-center mb-4">
             <span className="text-slate-500 font-medium">Total Amount</span>
-            <div className="flex items-center gap-1 border-b border-dashed border-slate-300 focus-within:border-primary transition-colors">
+            <div className="flex items-center gap-1 border-b-2 border-dashed border-slate-300 focus-within:border-primary transition-colors">
               <span className="text-xl font-bold text-slate-400">₹</span>
               <input
-                type="number"
-                step="any"
-                value={customTotalStr !== "" ? customTotalStr : total === 0 ? "" : total}
+                type="text"
+                inputMode="decimal"
+                value={customTotalStr !== "" ? customTotalStr : total === 0 ? "" : String(total)}
                 onChange={(e) => {
-                  setCustomTotalStr(e.target.value);
+                  // Only allow numeric input (digits and one decimal point)
+                  const val = e.target.value.replace(/[^0-9.]/g, "");
+                  setCustomTotalStr(val);
                 }}
-                onFocus={(e) => {
-                  // When user focuses, pre-fill with current total so they can edit it
-                  if (customTotalStr === "") {
-                    setCustomTotalStr(total > 0 ? String(total) : "");
-                  }
-                  e.target.select();
-                }}
-                placeholder={total > 0 ? total.toString() : "0"}
-                className="w-32 text-right text-3xl font-display font-black text-slate-800 bg-transparent outline-none border-none py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onFocus={(e) => e.target.select()}
+                placeholder={total > 0 ? String(total) : "0"}
+                className="w-32 text-right text-3xl font-display font-black text-slate-800 bg-transparent outline-none border-none py-1"
               />
             </div>
           </div>
