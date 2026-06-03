@@ -1,7 +1,6 @@
 {
   "outputDirectory": "public",
   "framework": "vite",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/:path*",

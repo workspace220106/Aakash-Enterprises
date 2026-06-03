@@ -1,7 +1,6 @@
 {
   "outputDirectory": "artifacts/aakash-enterprises/public",
   "framework": "vite",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/:path*",
