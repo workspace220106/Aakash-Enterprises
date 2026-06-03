@@ -8,12 +8,12 @@ import { Loader2 } from "lucide-react";
 import { AppLayout } from "./components/layout/AppLayout";
 import NotFound from "@/pages/not-found";
 
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Products = lazy(() => import("./pages/Products"));
-const POS = lazy(() => import("./pages/POS"));
-const Customers = lazy(() => import("./pages/Customers"));
-const Sales = lazy(() => import("./pages/Sales"));
-const Reports = lazy(() => import("./pages/Reports"));
+import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
+import POS from "./pages/POS";
+import Customers from "./pages/Customers";
+import Sales from "./pages/Sales";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient({
   defaultOptions: {
