@@ -54,8 +54,9 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   root: path.resolve(import.meta.dirname),
+  publicDir: "static",
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(import.meta.dirname, "public"),
     emptyOutDir: true,
     rollupOptions: {
       output: {
