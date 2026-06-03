@@ -523,6 +523,9 @@ components:
         customerId:
           type: integer
           nullable: true
+        total:
+          type: number
+          nullable: true
         items:
           type: array
           items:

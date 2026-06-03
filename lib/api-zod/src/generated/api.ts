@@ -249,6 +249,7 @@ export const GetSalesResponse = zod.array(GetSalesResponseItem);
  */
 export const CreateSaleBody = zod.object({
   customerId: zod.number().nullish(),
+  total: zod.number().nullish(),
   items: zod.array(
     zod.object({
       productId: zod.number(),

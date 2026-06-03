@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGetProducts, useGetCustomers, useCreateSale, getGetProductsQueryKey, getGetDashboardStatsQueryKey, type SaleWithDetails } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -58,13 +58,19 @@ export default function POS() {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const [customTotal, setCustomTotal] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCustomTotal(null);
+  }, [cart]);
 
   const handleGenerateBill = () => {
     if (cart.length === 0) return;
     createSaleMutation.mutate({
       data: {
         customerId: selectedCustomer ? parseInt(selectedCustomer) : null,
-        items: cart.map(c => ({ productId: c.id, quantity: c.quantity, price: c.price }))
+        items: cart.map(c => ({ productId: c.id, quantity: c.quantity, price: c.price })),
+        total: customTotal !== null ? customTotal : total
       }
     });
   };
@@ -176,7 +182,20 @@ export default function POS() {
         <div className="p-5 bg-slate-50 border-t border-slate-200">
           <div className="flex justify-between items-center mb-4">
             <span className="text-slate-500 font-medium">Total Amount</span>
-            <span className="text-3xl font-display font-black text-slate-800">{formatCurrency(total)}</span>
+            <div className="flex items-center gap-1 border-b border-dashed border-slate-300 focus-within:border-primary transition-colors">
+              <span className="text-xl font-bold text-slate-400">₹</span>
+              <input
+                type="number"
+                step="any"
+                value={customTotal !== null ? customTotal : total === 0 ? "" : total}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomTotal(val === "" ? null : parseFloat(val));
+                }}
+                placeholder={total.toString()}
+                className="w-32 text-right text-3xl font-display font-black text-slate-800 bg-transparent outline-none border-none py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
           </div>
           
           <div className="grid grid-cols-2 gap-3">

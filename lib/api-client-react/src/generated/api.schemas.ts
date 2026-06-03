@@ -61,6 +61,7 @@ export interface SaleItem {
 
 export interface CreateSaleInput {
   customerId?: number | null;
+  total?: number | null;
   items: SaleItem[];
   notes?: string | null;
 }

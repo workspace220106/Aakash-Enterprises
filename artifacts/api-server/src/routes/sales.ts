@@ -80,22 +80,29 @@ router.get("/sales", async (req, res) => {
 
 router.post("/sales", async (req, res) => {
   try {
-    const { customerId, items, notes } = req.body;
+    const { customerId, items, notes, total: customTotal } = req.body;
 
-    const total = items.reduce((sum: number, item: { quantity: number; price: number }) => sum + item.quantity * item.price, 0);
+    const calculatedTotal = items.reduce((sum: number, item: { quantity: number; price: number }) => sum + item.quantity * item.price, 0);
+    const finalTotal = customTotal !== undefined && customTotal !== null ? parseFloat(customTotal) : calculatedTotal;
 
     const [sale] = await db
       .insert(salesTable)
-      .values({ customerId: customerId ?? null, total: String(total), notes: notes ?? null })
+      .values({ customerId: customerId ?? null, total: String(finalTotal), notes: notes ?? null })
       .returning();
 
+    const scaleFactor = calculatedTotal > 0 ? finalTotal / calculatedTotal : 1;
+
     for (const item of items as { productId: number; quantity: number; price: number }[]) {
+      const originalItemTotal = item.quantity * item.price;
+      const finalItemTotal = originalItemTotal * scaleFactor;
+      const finalItemPrice = item.price * scaleFactor;
+
       await db.insert(saleItemsTable).values({
         saleId: sale.id,
         productId: item.productId,
         quantity: item.quantity,
-        price: String(item.price),
-        total: String(item.quantity * item.price),
+        price: String(parseFloat(finalItemPrice.toFixed(4))),
+        total: String(parseFloat(finalItemTotal.toFixed(2))),
       });
       await db
         .update(productsTable)
