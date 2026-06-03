@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calculator, X, Delete } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,29 @@ export function CalculatorWidget() {
     if (display.length > 1) setDisplay(display.slice(0, -1));
     else setDisplay("0");
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') handleNum(e.key);
+      else if (e.key === '.') handleNum(e.key);
+      else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+        e.preventDefault();
+        handleOp(e.key);
+      }
+      else if (e.key === 'Enter' || e.key === '=') {
+        e.preventDefault();
+        calculate();
+      }
+      else if (e.key === 'Backspace') backspace();
+      else if (e.key === 'Delete') clear();
+      else if (e.key === 'Escape') setIsOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, display, equation]);
 
   const btnClass = "h-12 rounded-xl font-display font-semibold text-lg hover:bg-slate-100 active:scale-95 transition-all bg-white border border-slate-200 shadow-sm text-slate-700";
   const opClass = "h-12 rounded-xl font-display font-semibold text-lg bg-primary/10 text-primary hover:bg-primary/20 active:scale-95 transition-all border border-primary/20 shadow-sm";
