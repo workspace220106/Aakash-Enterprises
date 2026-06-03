@@ -58,11 +58,19 @@ export default function POS() {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const [customTotal, setCustomTotal] = useState<number | null>(null);
+  const [customTotalStr, setCustomTotalStr] = useState<string>("");
 
+  // Reset custom total only when cart is cleared entirely
   useEffect(() => {
-    setCustomTotal(null);
-  }, [cart]);
+    if (cart.length === 0) {
+      setCustomTotalStr("");
+    }
+  }, [cart.length === 0]);
+
+  // The effective total to send: user-entered value takes priority
+  const effectiveTotal = customTotalStr !== "" && !isNaN(parseFloat(customTotalStr))
+    ? parseFloat(customTotalStr)
+    : total;
 
   const handleGenerateBill = () => {
     if (cart.length === 0) return;
@@ -70,7 +78,7 @@ export default function POS() {
       data: {
         customerId: selectedCustomer ? parseInt(selectedCustomer) : null,
         items: cart.map(c => ({ productId: c.id, quantity: c.quantity, price: c.price })),
-        total: customTotal !== null ? customTotal : total
+        total: effectiveTotal
       }
     });
   };
@@ -187,12 +195,18 @@ export default function POS() {
               <input
                 type="number"
                 step="any"
-                value={customTotal !== null ? customTotal : total === 0 ? "" : total}
+                value={customTotalStr !== "" ? customTotalStr : total === 0 ? "" : total}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  setCustomTotal(val === "" ? null : parseFloat(val));
+                  setCustomTotalStr(e.target.value);
                 }}
-                placeholder={total.toString()}
+                onFocus={(e) => {
+                  // When user focuses, pre-fill with current total so they can edit it
+                  if (customTotalStr === "") {
+                    setCustomTotalStr(total > 0 ? String(total) : "");
+                  }
+                  e.target.select();
+                }}
+                placeholder={total > 0 ? total.toString() : "0"}
                 className="w-32 text-right text-3xl font-display font-black text-slate-800 bg-transparent outline-none border-none py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
