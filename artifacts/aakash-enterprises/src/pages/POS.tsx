@@ -203,13 +203,12 @@ export default function POS() {
               <input
                 type="text"
                 inputMode="decimal"
-                value={customTotalStr !== "" ? customTotalStr : total === 0 ? "" : String(total)}
+                value={customTotalStr}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9.]/g, "");
                   setCustomTotalStr(val);
                   customTotalRef.current = val;
                 }}
-                onFocus={(e) => e.target.select()}
                 placeholder={total > 0 ? String(total) : "0"}
                 className="w-32 text-right text-3xl font-display font-black text-slate-800 bg-transparent outline-none border-none py-1"
               />
