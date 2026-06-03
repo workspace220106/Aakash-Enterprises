@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGetProducts, useGetCustomers, useCreateSale, getGetProductsQueryKey, getGetDashboardStatsQueryKey, type SaleWithDetails } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -59,26 +59,34 @@ export default function POS() {
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const [customTotalStr, setCustomTotalStr] = useState<string>("");
+  // Use a ref so handleGenerateBill always reads the CURRENT value, never stale
+  const customTotalRef = useRef<string>("");
 
-  // When cart is cleared, reset the custom amount
+  // Sync ref whenever state changes
   useEffect(() => {
-    setCustomTotalStr("");
-  }, [cart.length === 0 ? 1 : 0]);
+    customTotalRef.current = customTotalStr;
+  });
 
-  // Use the typed value if valid, else fall back to calculated total
-  const effectiveTotal = (() => {
-    if (customTotalStr.trim() === "") return total;
-    const parsed = parseFloat(customTotalStr);
-    return isNaN(parsed) ? total : parsed;
-  })();
+  // Reset when cart is cleared
+  useEffect(() => {
+    if (cart.length === 0) {
+      setCustomTotalStr("");
+      customTotalRef.current = "";
+    }
+  }, [cart.length]);
 
   const handleGenerateBill = () => {
     if (cart.length === 0) return;
+    // Read from ref to get truly current value (avoids stale closure)
+    const typedStr = customTotalRef.current.trim();
+    const parsed = parseFloat(typedStr);
+    const finalTotal = typedStr !== "" && !isNaN(parsed) ? parsed : total;
+    console.log("[POS] generating bill, typedStr:", typedStr, "finalTotal:", finalTotal, "calculatedTotal:", total);
     createSaleMutation.mutate({
       data: {
         customerId: selectedCustomer ? parseInt(selectedCustomer) : null,
         items: cart.map(c => ({ productId: c.id, quantity: c.quantity, price: c.price })),
-        total: effectiveTotal
+        total: finalTotal
       }
     });
   };
@@ -197,9 +205,9 @@ export default function POS() {
                 inputMode="decimal"
                 value={customTotalStr !== "" ? customTotalStr : total === 0 ? "" : String(total)}
                 onChange={(e) => {
-                  // Only allow numeric input (digits and one decimal point)
                   const val = e.target.value.replace(/[^0-9.]/g, "");
                   setCustomTotalStr(val);
+                  customTotalRef.current = val;
                 }}
                 onFocus={(e) => e.target.select()}
                 placeholder={total > 0 ? String(total) : "0"}

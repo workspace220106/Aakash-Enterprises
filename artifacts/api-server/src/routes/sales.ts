@@ -81,9 +81,13 @@ router.get("/sales", async (req, res) => {
 router.post("/sales", async (req, res) => {
   try {
     const { customerId, items, notes, total: customTotal } = req.body;
+    console.log("[createSale] received total:", customTotal, "type:", typeof customTotal);
 
     const calculatedTotal = items.reduce((sum: number, item: { quantity: number; price: number }) => sum + item.quantity * item.price, 0);
-    const finalTotal = customTotal !== undefined && customTotal !== null ? parseFloat(customTotal) : calculatedTotal;
+    const finalTotal = (customTotal !== undefined && customTotal !== null && !isNaN(Number(customTotal)))
+      ? Number(customTotal)
+      : calculatedTotal;
+    console.log("[createSale] finalTotal:", finalTotal, "calculatedTotal:", calculatedTotal);
 
     const [sale] = await db
       .insert(salesTable)
