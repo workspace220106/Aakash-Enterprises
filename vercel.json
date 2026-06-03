@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/artifacts/aakash-enterprises/public/index.html"
+      "destination": "/index.html"
     }
   ]
 }
