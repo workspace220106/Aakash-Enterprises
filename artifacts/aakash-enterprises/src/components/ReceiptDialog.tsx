@@ -62,10 +62,35 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-slate-800">
-                <td colSpan={3} className="pt-4 font-bold text-lg uppercase">Grand Total</td>
-                <td className="pt-4 text-right font-bold text-lg">{formatCurrency(sale.total)}</td>
-              </tr>
+              {(() => {
+                const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
+                const hasDiscount = subtotal > sale.total + 0.01;
+                if (!hasDiscount) {
+                  return (
+                    <tr className="border-t-2 border-slate-800">
+                      <td colSpan={3} className="pt-4 font-bold text-lg uppercase">Grand Total</td>
+                      <td className="pt-4 text-right font-bold text-lg">{formatCurrency(sale.total)}</td>
+                    </tr>
+                  );
+                }
+                const discountPercent = ((subtotal - sale.total) / subtotal) * 100;
+                return (
+                  <>
+                    <tr className="border-t-2 border-slate-800">
+                      <td colSpan={3} className="pt-2 text-slate-500 text-xs">Subtotal</td>
+                      <td className="pt-2 text-right text-slate-500 text-xs">{formatCurrency(subtotal)}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={3} className="py-1 text-slate-500 text-xs">Discount ({discountPercent.toFixed(2)}%)</td>
+                      <td className="py-1 text-right text-red-600 text-xs font-semibold">-{formatCurrency(subtotal - sale.total)}</td>
+                    </tr>
+                    <tr className="border-t border-slate-200">
+                      <td colSpan={3} className="pt-2 font-bold text-lg uppercase">Grand Total</td>
+                      <td className="pt-2 text-right font-bold text-lg">{formatCurrency(sale.total)}</td>
+                    </tr>
+                  </>
+                );
+              })()}
             </tfoot>
           </table>
 

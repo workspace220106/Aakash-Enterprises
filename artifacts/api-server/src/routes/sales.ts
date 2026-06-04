@@ -91,22 +91,29 @@ router.post("/sales", async (req, res) => {
 
     const [sale] = await db
       .insert(salesTable)
-      .values({ customerId: customerId ?? null, total: String(finalTotal), notes: notes ?? null })
+      .values({ 
+        customerId: customerId ?? null, 
+        total: String(finalTotal), 
+        notes: (() => {
+          const discountPercent = calculatedTotal > 0 ? Math.max(0, ((calculatedTotal - finalTotal) / calculatedTotal) * 100) : 0;
+          if (discountPercent > 0) {
+            const discountStr = `Discount: ${discountPercent.toFixed(2)}%`;
+            return notes ? `${notes} | ${discountStr}` : discountStr;
+          }
+          return notes ?? null;
+        })()
+      })
       .returning();
-
-    const scaleFactor = calculatedTotal > 0 ? finalTotal / calculatedTotal : 1;
 
     for (const item of items as { productId: number; quantity: number; price: number }[]) {
       const originalItemTotal = item.quantity * item.price;
-      const finalItemTotal = originalItemTotal * scaleFactor;
-      const finalItemPrice = item.price * scaleFactor;
 
       await db.insert(saleItemsTable).values({
         saleId: sale.id,
         productId: item.productId,
         quantity: item.quantity,
-        price: String(parseFloat(finalItemPrice.toFixed(4))),
-        total: String(parseFloat(finalItemTotal.toFixed(2))),
+        price: String(item.price),
+        total: String(originalItemTotal),
       });
       await db
         .update(productsTable)
