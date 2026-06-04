@@ -181,6 +181,23 @@ router.delete("/sales/:id", async (req, res) => {
   }
 });
 
+router.get("/sales/:id/pdf", async (req, res) => {
+  try {
+    const saleId = parseInt(req.params.id);
+    const filePath = path.join(process.cwd(), "public", "receipts", `receipt_${saleId}.pdf`);
+    if (fs.existsSync(filePath)) {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="receipt_${saleId}.pdf"`);
+      return res.sendFile(filePath);
+    } else {
+      return res.status(404).json({ message: "Receipt PDF not found" });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to retrieve PDF" });
+  }
+});
+
 router.post("/sales/:id/pdf", express.json({ limit: "50mb" }), async (req, res) => {
   try {
     const saleId = parseInt(req.params.id);

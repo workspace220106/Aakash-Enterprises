@@ -145,7 +145,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
       }
 
       // 3. Open WhatsApp link in the pre-opened tab
-      const pdfUrl = `https://aakash-enterprises-api.onrender.com/receipts/receipt_${sale.id}.pdf`;
+      const pdfUrl = `${window.location.origin}/api/sales/${sale.id}/pdf`;
       const rawPhone = sale.customerPhone || "";
       const cleanPhone = rawPhone.replace(/\D/g, "");
       const messageText = encodeURIComponent(`*AAKASH ENTERPRISES*\nHello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)} in PDF format:\n${pdfUrl}`);
