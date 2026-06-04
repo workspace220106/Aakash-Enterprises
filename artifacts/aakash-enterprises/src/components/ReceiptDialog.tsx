@@ -58,6 +58,76 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     window.open(whatsappUrl, "_blank");
   };
 
+  const handleWhatsAppPDFShare = async () => {
+    if (!sale) return;
+
+    try {
+      // Dynamically import jspdf and html2canvas
+      const { jsPDF } = await import("jspdf");
+      const html2canvas = (await import("html2canvas")).default;
+
+      const element = document.getElementById("receipt-content");
+      if (!element) return alert("Receipt content not found!");
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const pdfBlob = pdf.output("blob");
+      const fileName = `receipt_${sale.id.toString().padStart(6, '0')}.pdf`;
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Receipt #${sale.id.toString().padStart(6, '0')}`,
+          text: `Here is the receipt from Aakash Enterprises for ₹${sale.total.toFixed(2)}`,
+        });
+      } else {
+        pdf.save(fileName);
+        
+        const rawPhone = sale.customerPhone || "";
+        const cleanPhone = rawPhone.replace(/\D/g, "");
+        const messageText = encodeURIComponent(`Hello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)}. I have downloaded the PDF to my device and will share it now.`);
+        
+        const whatsappUrl = cleanPhone 
+          ? `https://wa.me/${cleanPhone}?text=${messageText}`
+          : `https://wa.me/?text=${messageText}`;
+          
+        window.open(whatsappUrl, "_blank");
+        alert("PDF generated & downloaded successfully! Please upload it to the WhatsApp chat that just opened.");
+      }
+    } catch (error) {
+      console.error("Error generating PDF: ", error);
+      alert("Failed to generate PDF receipt. Please try using standard print/share option.");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white print:shadow-none print:border-none">
@@ -153,13 +223,18 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold" onClick={handleWhatsAppShare}>
-              <Send className="w-4 h-4" /> Share WhatsApp
+            <Button variant="secondary" className="flex-1 gap-2 border border-slate-200" onClick={handlePrint}>
+              <Printer className="w-4 h-4" /> Print
             </Button>
           </div>
-          <Button variant="secondary" className="w-full gap-2 border border-slate-200" onClick={handlePrint}>
-            <Printer className="w-4 h-4" /> Print Bill
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center" onClick={handleWhatsAppShare}>
+              <Send className="w-4 h-4" /> WhatsApp Text
+            </Button>
+            <Button className="gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold flex items-center justify-center" onClick={handleWhatsAppPDFShare}>
+              <Send className="w-4 h-4" /> WhatsApp PDF
+            </Button>
+          </div>
         </div>
       </DialogContent>
 
