@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X } from "lucide-react";
+import { Printer, X, Send } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { SaleWithDetails } from "@workspace/api-client-react";
 
@@ -15,6 +15,47 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!sale) return;
+
+    const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
+    const discount = subtotal - sale.total;
+    const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
+
+    let message = `*AAKASH ENTERPRISES*\n`;
+    message += `Retail & Wholesale Cold Drinks\n`;
+    message += `----------------------------\n`;
+    message += `*RECEIPT #${sale.id.toString().padStart(6, '0')}*\n`;
+    message += `Date: ${new Date(sale.date).toLocaleString('en-IN')}\n`;
+    message += `Customer: ${sale.customerName || "Walk-in Customer"}\n`;
+    message += `----------------------------\n`;
+    message += `*Items:*\n`;
+    
+    sale.items.forEach(item => {
+      message += `- ${item.productName} x ${item.quantity} @ ₹${item.price.toFixed(2)} = ₹${item.total.toFixed(2)}\n`;
+    });
+    
+    message += `----------------------------\n`;
+    if (discount > 0.01) {
+      message += `Subtotal: ₹${subtotal.toFixed(2)}\n`;
+      message += `Discount (${discountPercent.toFixed(2)}%): -₹${discount.toFixed(2)}\n`;
+    }
+    message += `*Grand Total: ₹${sale.total.toFixed(2)}*\n`;
+    message += `----------------------------\n`;
+    message += `Thank you for your business!\n`;
+    message += `Please visit again.`;
+
+    const encodedText = encodeURIComponent(message);
+    const rawPhone = sale.customerPhone || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "");
+    
+    const whatsappUrl = cleanPhone 
+      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
+      : `https://wa.me/?text=${encodedText}`;
+
+    window.open(whatsappUrl, "_blank");
   };
 
   return (
@@ -107,11 +148,16 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50 border-t print:hidden flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-          <Button className="flex-1 gap-2" onClick={handlePrint}>
+        <div className="p-4 bg-slate-50 border-t print:hidden flex flex-col gap-2">
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold" onClick={handleWhatsAppShare}>
+              <Send className="w-4 h-4" /> Share WhatsApp
+            </Button>
+          </div>
+          <Button variant="secondary" className="w-full gap-2 border border-slate-200" onClick={handlePrint}>
             <Printer className="w-4 h-4" /> Print Bill
           </Button>
         </div>

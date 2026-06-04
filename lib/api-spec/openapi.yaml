@@ -547,6 +547,9 @@ components:
         customerName:
           type: string
           nullable: true
+        customerPhone:
+          type: string
+          nullable: true
         total:
           type: number
         notes:

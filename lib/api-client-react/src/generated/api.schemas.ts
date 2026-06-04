@@ -79,6 +79,7 @@ export interface SaleWithDetails {
   id: number;
   customerId?: number | null;
   customerName?: string | null;
+  customerPhone?: string | null;
   total: number;
   notes?: string | null;
   date: string;

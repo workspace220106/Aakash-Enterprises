@@ -19,6 +19,7 @@ router.get("/sales", async (req, res) => {
         id: salesTable.id,
         customerId: salesTable.customerId,
         customerName: customersTable.name,
+        customerPhone: customersTable.phone,
         total: salesTable.total,
         notes: salesTable.notes,
         date: salesTable.date
@@ -65,6 +66,7 @@ router.get("/sales", async (req, res) => {
       id: sale.id,
       customerId: sale.customerId,
       customerName: sale.customerName,
+      customerPhone: sale.customerPhone,
       total: parseFloat(sale.total),
       notes: sale.notes,
       date: sale.date.toISOString(),
@@ -122,9 +124,11 @@ router.post("/sales", async (req, res) => {
     }
 
     let customerName: string | null = null;
+    let customerPhone: string | null = null;
     if (sale.customerId) {
       const [customer] = await db.select().from(customersTable).where(eq(customersTable.id, sale.customerId));
       customerName = customer?.name ?? null;
+      customerPhone = customer?.phone ?? null;
     }
 
     const saleItems = await db
@@ -144,6 +148,7 @@ router.post("/sales", async (req, res) => {
       id: sale.id,
       customerId: sale.customerId,
       customerName,
+      customerPhone,
       total: parseFloat(sale.total),
       notes: sale.notes,
       date: sale.date.toISOString(),
