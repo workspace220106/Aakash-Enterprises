@@ -1,6 +1,6 @@
 {
   "outputDirectory": "artifacts/aakash-enterprises/public",
-  "framework": "vite",
+  "framework": null,
   "rewrites": [
     {
       "source": "/api/(.*)",
