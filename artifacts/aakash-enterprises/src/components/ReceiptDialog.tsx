@@ -24,49 +24,114 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     if (!sale) return;
     setIsSharingPDF(true);
 
+    const newTab = window.open("", "_blank");
+    if (newTab) {
+      newTab.document.write("<p style='font-family: sans-serif; text-align: center; margin-top: 50px;'>Generating receipt PDF and preparing WhatsApp link... Please wait.</p>");
+    }
+
     try {
-      // Dynamically import jspdf and html2canvas
+      // Dynamically import jspdf
       const { jsPDF } = await import("jspdf");
-      const html2canvas = (await import("html2canvas")).default;
 
-      const element = document.getElementById("receipt-content");
-      if (!element) {
-        setIsSharingPDF(false);
-        return alert("Receipt content not found!");
-      }
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
+      const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      // 1. Generate clean native PDF vector document (Courier monospaced receipt layout)
+      let y = 30;
+      doc.setFont("courier", "bold");
+      doc.setFontSize(22);
+      doc.text("AAKASH ENTERPRISES", 105, y, { align: "center" });
+      
+      y += 8;
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+      doc.text("Retail & Wholesale Cold Drinks", 105, y, { align: "center" });
+      
+      y += 10;
+      doc.line(20, y, 190, y);
+      
+      y += 8;
+      doc.setFont("courier", "bold");
+      doc.text(`RECEIPT #${sale.id.toString().padStart(6, '0')}`, 20, y);
+      doc.setFont("courier", "normal");
+      doc.text(new Date(sale.date).toLocaleString('en-IN'), 190, y, { align: "right" });
+      
+      y += 6;
+      doc.text(`Customer: ${sale.customerName || "Walk-in Customer"}`, 20, y);
+      
+      y += 8;
+      doc.line(20, y, 190, y);
+      
+      y += 10;
+      doc.setFont("courier", "bold");
+      doc.text("Item", 20, y);
+      doc.text("Qty", 120, y, { align: "center" });
+      doc.text("Price", 155, y, { align: "right" });
+      doc.text("Total", 190, y, { align: "right" });
+      
+      y += 4;
+      doc.line(20, y, 190, y);
+      
+      doc.setFont("courier", "normal");
+      sale.items.forEach(item => {
+        y += 8;
+        if (y > 260) {
+          doc.addPage();
+          y = 30;
+          doc.setFont("courier", "bold");
+          doc.text("Item", 20, y);
+          doc.text("Qty", 120, y, { align: "center" });
+          doc.text("Price", 155, y, { align: "right" });
+          doc.text("Total", 190, y, { align: "right" });
+          y += 4;
+          doc.line(20, y, 190, y);
+          doc.setFont("courier", "normal");
+          y += 8;
+        }
 
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        let name = item.productName || "";
+        if (name.length > 30) name = name.substring(0, 27) + "...";
+        doc.text(name, 20, y);
+        doc.text(String(item.quantity), 120, y, { align: "center" });
+        doc.text(`INR ${item.price.toFixed(2)}`, 155, y, { align: "right" });
+        doc.text(`INR ${item.total.toFixed(2)}`, 190, y, { align: "right" });
+      });
+      
+      y += 8;
+      doc.line(20, y, 190, y);
+      
+      y += 10;
+      const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
+      const discount = subtotal - sale.total;
+      const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
+      
+      if (discount > 0.01) {
+        doc.text("Subtotal:", 130, y);
+        doc.text(`INR ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
+        
+        y += 6;
+        doc.text(`Discount (${discountPercent.toFixed(2)}%):`, 130, y);
+        doc.text(`-INR ${discount.toFixed(2)}`, 190, y, { align: "right" });
+        y += 6;
       }
+      
+      doc.setFont("courier", "bold");
+      doc.text("GRAND TOTAL:", 130, y);
+      doc.text(`INR ${sale.total.toFixed(2)}`, 190, y, { align: "right" });
+      
+      y += 15;
+      doc.setFont("courier", "italic");
+      doc.setFontSize(10);
+      doc.text("Thank you for your business!", 105, y, { align: "center" });
+      y += 5;
+      doc.text("Please visit again", 105, y, { align: "center" });
 
-      const pdfBase64 = pdf.output("datauristring").split(",")[1];
+      const pdfBase64 = doc.output("datauristring").split(",")[1];
 
-      // Upload PDF to backend
+      // 2. Upload PDF to backend
       const response = await fetch(`/api/sales/${sale.id}/pdf`, {
         method: "POST",
         headers: {
@@ -79,6 +144,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         throw new Error("Failed to upload PDF");
       }
 
+      // 3. Open WhatsApp link in the pre-opened tab
       const pdfUrl = `https://aakash-enterprises-api.onrender.com/receipts/receipt_${sale.id}.pdf`;
       const rawPhone = sale.customerPhone || "";
       const cleanPhone = rawPhone.replace(/\D/g, "");
@@ -88,9 +154,14 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         ? `https://wa.me/${cleanPhone}?text=${messageText}`
         : `https://wa.me/?text=${messageText}`;
         
-      window.open(whatsappUrl, "_blank");
+      if (newTab) {
+        newTab.location.href = whatsappUrl;
+      }
     } catch (error) {
       console.error("Error generating/sharing PDF: ", error);
+      if (newTab) {
+        newTab.close();
+      }
       alert("Failed to share PDF receipt. Please try again.");
     } finally {
       setIsSharingPDF(false);
