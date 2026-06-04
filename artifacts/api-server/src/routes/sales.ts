@@ -2,6 +2,9 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { salesTable, saleItemsTable, productsTable, customersTable } from "@workspace/db/schema";
 import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
+import path from "path";
+import fs from "fs";
+import express from "express";
 
 const router = Router();
 
@@ -175,6 +178,27 @@ router.delete("/sales/:id", async (req, res) => {
     res.json({ message: "Sale deleted" });
   } catch {
     res.status(500).json({ message: "Failed to delete sale" });
+  }
+});
+
+router.post("/sales/:id/pdf", express.json({ limit: "50mb" }), async (req, res) => {
+  try {
+    const saleId = parseInt(req.params.id);
+    const { pdfBase64 } = req.body;
+    if (!pdfBase64) {
+      return res.status(400).json({ message: "Missing pdfBase64 content" });
+    }
+    const buffer = Buffer.from(pdfBase64, "base64");
+    const filePath = path.join(process.cwd(), "public", "receipts", `receipt_${saleId}.pdf`);
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, buffer);
+    return res.json({ message: "PDF uploaded successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to upload PDF" });
   }
 });
 

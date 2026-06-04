@@ -1,8 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Send } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { SaleWithDetails } from "@workspace/api-client-react";
+import { useState } from "react";
 
 interface ReceiptDialogProps {
   sale: SaleWithDetails | null;
@@ -13,53 +14,15 @@ interface ReceiptDialogProps {
 export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) {
   if (!sale) return null;
 
+  const [isSharingPDF, setIsSharingPDF] = useState(false);
+
   const handlePrint = () => {
     window.print();
   };
 
-  const handleWhatsAppShare = () => {
-    if (!sale) return;
-
-    const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
-    const discount = subtotal - sale.total;
-    const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
-
-    let message = `*AAKASH ENTERPRISES*\n`;
-    message += `Retail & Wholesale Cold Drinks\n`;
-    message += `----------------------------\n`;
-    message += `*RECEIPT #${sale.id.toString().padStart(6, '0')}*\n`;
-    message += `Date: ${new Date(sale.date).toLocaleString('en-IN')}\n`;
-    message += `Customer: ${sale.customerName || "Walk-in Customer"}\n`;
-    message += `----------------------------\n`;
-    message += `*Items:*\n`;
-    
-    sale.items.forEach(item => {
-      message += `- ${item.productName} x ${item.quantity} @ ₹${item.price.toFixed(2)} = ₹${item.total.toFixed(2)}\n`;
-    });
-    
-    message += `----------------------------\n`;
-    if (discount > 0.01) {
-      message += `Subtotal: ₹${subtotal.toFixed(2)}\n`;
-      message += `Discount (${discountPercent.toFixed(2)}%): -₹${discount.toFixed(2)}\n`;
-    }
-    message += `*Grand Total: ₹${sale.total.toFixed(2)}*\n`;
-    message += `----------------------------\n`;
-    message += `Thank you for your business!\n`;
-    message += `Please visit again.`;
-
-    const encodedText = encodeURIComponent(message);
-    const rawPhone = sale.customerPhone || "";
-    const cleanPhone = rawPhone.replace(/\D/g, "");
-    
-    const whatsappUrl = cleanPhone 
-      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
-      : `https://wa.me/?text=${encodedText}`;
-
-    window.open(whatsappUrl, "_blank");
-  };
-
   const handleWhatsAppPDFShare = async () => {
     if (!sale) return;
+    setIsSharingPDF(true);
 
     try {
       // Dynamically import jspdf and html2canvas
@@ -67,7 +30,10 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
       const html2canvas = (await import("html2canvas")).default;
 
       const element = document.getElementById("receipt-content");
-      if (!element) return alert("Receipt content not found!");
+      if (!element) {
+        setIsSharingPDF(false);
+        return alert("Receipt content not found!");
+      }
 
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -98,33 +64,36 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         heightLeft -= pageHeight;
       }
 
-      const pdfBlob = pdf.output("blob");
-      const fileName = `receipt_${sale.id.toString().padStart(6, '0')}.pdf`;
-      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+      const pdfBase64 = pdf.output("datauristring").split(",")[1];
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Receipt #${sale.id.toString().padStart(6, '0')}`,
-          text: `Here is the receipt from Aakash Enterprises for ₹${sale.total.toFixed(2)}`,
-        });
-      } else {
-        pdf.save(fileName);
-        
-        const rawPhone = sale.customerPhone || "";
-        const cleanPhone = rawPhone.replace(/\D/g, "");
-        const messageText = encodeURIComponent(`Hello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)}. I have downloaded the PDF to my device and will share it now.`);
-        
-        const whatsappUrl = cleanPhone 
-          ? `https://wa.me/${cleanPhone}?text=${messageText}`
-          : `https://wa.me/?text=${messageText}`;
-          
-        window.open(whatsappUrl, "_blank");
-        alert("PDF generated & downloaded successfully! Please upload it to the WhatsApp chat that just opened.");
+      // Upload PDF to backend
+      const response = await fetch(`/api/sales/${sale.id}/pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pdfBase64 }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload PDF");
       }
+
+      const pdfUrl = `https://aakash-enterprises-api.onrender.com/receipts/receipt_${sale.id}.pdf`;
+      const rawPhone = sale.customerPhone || "";
+      const cleanPhone = rawPhone.replace(/\D/g, "");
+      const messageText = encodeURIComponent(`*AAKASH ENTERPRISES*\nHello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)} in PDF format:\n${pdfUrl}`);
+      
+      const whatsappUrl = cleanPhone 
+        ? `https://wa.me/${cleanPhone}?text=${messageText}`
+        : `https://wa.me/?text=${messageText}`;
+        
+      window.open(whatsappUrl, "_blank");
     } catch (error) {
-      console.error("Error generating PDF: ", error);
-      alert("Failed to generate PDF receipt. Please try using standard print/share option.");
+      console.error("Error generating/sharing PDF: ", error);
+      alert("Failed to share PDF receipt. Please try again.");
+    } finally {
+      setIsSharingPDF(false);
     }
   };
 
@@ -227,14 +196,13 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
               <Printer className="w-4 h-4" /> Print
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center" onClick={handleWhatsAppShare}>
-              <Send className="w-4 h-4" /> WhatsApp Text
-            </Button>
-            <Button className="gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold flex items-center justify-center" onClick={handleWhatsAppPDFShare}>
-              <Send className="w-4 h-4" /> WhatsApp PDF
-            </Button>
-          </div>
+          <Button 
+            disabled={isSharingPDF}
+            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center py-5 rounded-xl shadow-lg hover:shadow-emerald-600/20 transition-all disabled:bg-emerald-800 disabled:opacity-70" 
+            onClick={handleWhatsAppPDFShare}
+          >
+            <Send className="w-4 h-4" /> {isSharingPDF ? "Generating & Hosting PDF..." : "Send PDF via WhatsApp"}
+          </Button>
         </div>
       </DialogContent>
 
