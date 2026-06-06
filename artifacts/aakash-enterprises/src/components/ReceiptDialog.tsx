@@ -39,104 +39,250 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     }
 
     try {
-      // Dynamically import jspdf and html2canvas
       const { jsPDF } = await import("jspdf");
-      const { default: html2canvas } = await import("html2canvas");
 
-      const element = document.getElementById("receipt-content");
-      if (!element) throw new Error("Receipt content element not found");
+      // ── Native jsPDF vector drawing — 100% reliable, no html2canvas ──
+      const pageW = 210; // A4 width in mm
+      const pageH = 297; // A4 height in mm
+      const receiptW = 120; // receipt card width
+      const left = (pageW - receiptW) / 2; // left edge of receipt
+      const right = left + receiptW;       // right edge
+      const cx = pageW / 2;               // center X
 
-      // ── Clone the receipt into an off-screen container ──
-      // This completely bypasses any scroll, overflow, or Radix portal issues
-      // by rendering a fresh, unconstrained copy of the receipt element.
-      const offscreen = document.createElement("div");
-      offscreen.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        width: ${element.scrollWidth}px;
-        overflow: visible;
-        height: auto;
-        max-height: none;
-        background: white;
-        z-index: -1;
-        pointer-events: none;
-      `;
-      const clone = element.cloneNode(true) as HTMLElement;
-      clone.removeAttribute("id"); // avoid duplicate IDs
-      clone.style.overflow = "visible";
-      clone.style.height = "auto";
-      clone.style.maxHeight = "none";
-      clone.style.flex = "none";
-      offscreen.appendChild(clone);
-      document.body.appendChild(offscreen);
+      // Currency formatter for PDF (use Rs. since default fonts lack ₹)
+      const fmtCur = (n: number) => {
+        const formatted = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.abs(n));
+        return `Rs.${formatted}`;
+      };
 
-      // Small delay to let the browser paint the off-screen clone
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // ── First pass: measure total height to center vertically ──
+      let totalH = 0;
+      totalH += 8;   // shop name
+      totalH += 5;   // tagline
+      totalH += 5;   // GSTIN
+      totalH += 4;   // gap before dashed line
+      totalH += 0.5; // dashed line
+      totalH += 5;   // receipt #
+      totalH += 5;   // date
+      totalH += 0.5; // dashed line
+      totalH += 6;   // gap
+      totalH += 4;   // "CUSTOMER" label
+      totalH += 5;   // customer name
+      totalH += 6;   // gap
+      totalH += 0.3; // table header border
+      totalH += 5;   // header row
+      totalH += sale.items.length * 7; // item rows
+      totalH += 0.5; // thick border
+      const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
+      const hasDiscount = subtotal > sale.total + 0.01;
+      if (hasDiscount) {
+        totalH += 5;  // subtotal row
+        totalH += 5;  // discount row
+        totalH += 0.3; // thin border
+      }
+      totalH += 8;   // grand total row
+      if (sale.notes) {
+        totalH += 8; // notes section
+      }
+      totalH += 6;   // gap before footer
+      totalH += 0.5; // dashed line
+      totalH += 6;   // thank you
+      totalH += 5;   // please visit again
+      totalH += 4;   // bottom padding
 
-      const canvas = await html2canvas(clone, {
-        scale: 2, // 2x scale for crisp quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        width: clone.scrollWidth,
-        height: clone.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-        x: 0,
-        y: 0
-      });
+      const startY = Math.max(15, (pageH - totalH) / 2);
 
-      // Remove the off-screen container
-      document.body.removeChild(offscreen);
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-      // Create a standard A4 PDF document (210mm x 297mm)
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      
-      // Calculate receipt dimensions to fit nicely centered on A4
-      const receiptWidth = 120; // 120mm wide receipt card
-      const receiptHeight = (canvas.height * receiptWidth) / canvas.width;
-      
-      const xOffset = (pdfWidth - receiptWidth) / 2;
-      const yOffset = Math.max(15, (pdfHeight - receiptHeight) / 2); // Center vertically, min 15mm top margin
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
+      // ── Second pass: draw ──
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       doc.setProperties({
         title: `Receipt #${sale.id.toString().padStart(6, '0')} - Aakash Enterprises`,
         subject: `GSTIN: wertyuio123456789`,
         creator: 'Aakash Enterprises'
       });
 
-      doc.addImage(imgData, "JPEG", xOffset, yOffset, receiptWidth, receiptHeight);
+      let y = startY;
 
+      // ─── HEADER: Shop Name ───
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("AAKASH ENTERPRISES", cx, y, { align: "center" });
+      y += 7;
+
+      // Tagline
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text("Retail & Wholesale Cold Drinks", cx, y, { align: "center" });
+      y += 4.5;
+
+      // GSTIN
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+      doc.text("GSTIN: wertyuio123456789", cx, y, { align: "center" });
+      y += 5;
+
+      // ─── Dashed separator ───
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineDashPattern([1.5, 1], 0);
+      doc.setLineWidth(0.3);
+      doc.line(left, y, right, y);
+      y += 5;
+
+      // Receipt # and Date
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(30, 30, 30);
+      doc.text(`RECEIPT #${sale.id.toString().padStart(6, '0')}`, cx, y, { align: "center" });
+      y += 5;
+      doc.setFontSize(9);
+      doc.text(new Date(sale.date).toLocaleString('en-IN'), cx, y, { align: "center" });
+      y += 4;
+
+      // Dashed separator
+      doc.line(left, y, right, y);
+      doc.setLineDashPattern([], 0); // reset to solid
+      y += 6;
+
+      // ─── CUSTOMER ───
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text("CUSTOMER", left, y);
+      y += 4;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(30, 30, 30);
+      doc.text(sale.customerName || "Walk-in Customer", left, y);
+      y += 7;
+
+      // ─── TABLE HEADER ───
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.2);
+      // Column positions
+      const colItem = left;
+      const colQty = left + receiptW * 0.45;
+      const colPrice = left + receiptW * 0.65;
+      const colTotal = right;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text("Item", colItem, y);
+      doc.text("Qty", colQty, y, { align: "center" });
+      doc.text("Price", colPrice, y, { align: "right" });
+      doc.text("Total", colTotal, y, { align: "right" });
+      y += 2;
+      doc.line(left, y, right, y);
+      y += 4;
+
+      // ─── TABLE ROWS ───
+      doc.setTextColor(30, 30, 30);
+      for (const item of sale.items) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(item.productName, colItem, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(item.quantity), colQty, y, { align: "center" });
+        doc.text(fmtCur(item.price), colPrice, y, { align: "right" });
+        doc.setFont("helvetica", "bold");
+        doc.text(fmtCur(item.total), colTotal, y, { align: "right" });
+        y += 7;
+      }
+
+      // ─── TOTALS ───
+      // Thick separator
+      doc.setDrawColor(30, 30, 30);
+      doc.setLineWidth(0.6);
+      doc.line(left, y, right, y);
+      y += 4;
+
+      if (hasDiscount) {
+        // Subtotal
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text("Subtotal", colItem, y);
+        doc.text(fmtCur(subtotal), colTotal, y, { align: "right" });
+        y += 5;
+
+        // Discount
+        const discountPercent = ((subtotal - sale.total) / subtotal) * 100;
+        doc.text(`Discount (${discountPercent.toFixed(2)}%)`, colItem, y);
+        doc.setTextColor(200, 50, 50);
+        doc.setFont("helvetica", "bold");
+        doc.text(`-${fmtCur(subtotal - sale.total)}`, colTotal, y, { align: "right" });
+        y += 4;
+
+        // Thin separator before grand total
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+        doc.line(left, y, right, y);
+        y += 4;
+      }
+
+      // Grand Total
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(30, 30, 30);
+      doc.text("GRAND TOTAL", colItem, y);
+      doc.text(fmtCur(sale.total), colTotal, y, { align: "right" });
+      y += 8;
+
+      // ─── NOTES ───
+      if (sale.notes) {
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(left, y - 1, receiptW, 12, 1, 1, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(30, 30, 30);
+        doc.text("Notes:", left + 2, y + 2);
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(7);
+        doc.setTextColor(80, 80, 80);
+        // Wrap notes text to fit within receipt width
+        const noteLines = doc.splitTextToSize(sale.notes, receiptW - 6);
+        doc.text(noteLines, left + 2, y + 6);
+        y += 14;
+      }
+
+      // ─── FOOTER ───
+      y += 2;
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineDashPattern([1.5, 1], 0);
+      doc.setLineWidth(0.3);
+      doc.line(left, y, right, y);
+      y += 6;
+
+      doc.setFont("helvetica", "bolditalic");
+      doc.setFontSize(10);
+      doc.setTextColor(30, 30, 30);
+      doc.text("Thank you for your business!", cx, y, { align: "center" });
+      y += 5;
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      doc.text("Please visit again", cx, y, { align: "center" });
+
+      // ── Generate and upload ──
       const pdfBase64 = doc.output("datauristring").split(",")[1];
 
-      // 2. Upload PDF to backend
       const response = await fetch(`/api/sales/${sale.id}/pdf`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pdfBase64 }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to upload PDF");
-      }
+      if (!response.ok) throw new Error("Failed to upload PDF");
 
-      // 3. Open WhatsApp link in the pre-opened tab
+      // Open WhatsApp link
       const pdfUrl = `${window.location.origin}/api/sales/${sale.id}/pdf`;
       const rawPhone = sale.customerPhone || "";
       const cleanPhone = rawPhone.replace(/\D/g, "");
-      const messageText = encodeURIComponent(`*AAKASH ENTERPRISES*\nHello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)} in PDF format:\n${pdfUrl}`);
+      const messageText = encodeURIComponent(`*AAKASH ENTERPRISES*\nHello, here is your receipt #${sale.id.toString().padStart(6, '0')} for Rs.${sale.total.toFixed(0)} in PDF format:\n${pdfUrl}`);
       
       const whatsappUrl = cleanPhone 
         ? `https://wa.me/${cleanPhone}?text=${messageText}`
