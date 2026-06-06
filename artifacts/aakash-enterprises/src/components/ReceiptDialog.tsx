@@ -46,34 +46,49 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
       const element = document.getElementById("receipt-content");
       if (!element) throw new Error("Receipt content element not found");
 
-      // Save scroll position & styling to restore later
-      const originalScrollTop = element.scrollTop;
-      const originalOverflow = element.style.overflow;
-      const originalHeight = element.style.height;
-      const originalMaxHeight = element.style.maxHeight;
+      // ── Clone the receipt into an off-screen container ──
+      // This completely bypasses any scroll, overflow, or Radix portal issues
+      // by rendering a fresh, unconstrained copy of the receipt element.
+      const offscreen = document.createElement("div");
+      offscreen.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: ${element.scrollWidth}px;
+        overflow: visible;
+        height: auto;
+        max-height: none;
+        background: white;
+        z-index: -1;
+        pointer-events: none;
+      `;
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.removeAttribute("id"); // avoid duplicate IDs
+      clone.style.overflow = "visible";
+      clone.style.height = "auto";
+      clone.style.maxHeight = "none";
+      clone.style.flex = "none";
+      offscreen.appendChild(clone);
+      document.body.appendChild(offscreen);
 
-      // Reset scroll to top and temporarily expand element to capture full content
-      element.scrollTop = 0;
-      element.style.overflow = "visible";
-      element.style.height = "auto";
-      element.style.maxHeight = "none";
+      // Small delay to let the browser paint the off-screen clone
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      const canvas = await html2canvas(element, {
+      const canvas = await html2canvas(clone, {
         scale: 2, // 2x scale for crisp quality
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        width: clone.scrollWidth,
+        height: clone.scrollHeight,
         scrollX: 0,
         scrollY: 0,
         x: 0,
         y: 0
       });
 
-      // Restore scroll & styling
-      element.style.overflow = originalOverflow;
-      element.style.height = originalHeight;
-      element.style.maxHeight = originalMaxHeight;
-      element.scrollTop = originalScrollTop;
+      // Remove the off-screen container
+      document.body.removeChild(offscreen);
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
