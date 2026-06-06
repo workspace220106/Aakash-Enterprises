@@ -239,12 +239,19 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          /* Reset page margins */
+          @page {
+            size: auto;
+            margin: 0;
+          }
+
           /* Force page & body to allow overflow and height scaling */
           html, body {
             overflow: visible !important;
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: white !important;
           }
 
           /* Hide the entire main React application and overlays */
@@ -263,20 +270,21 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             display: block !important;
           }
 
-          /* Force the dialog content to print as a simple block */
+          /* Force the dialog content to print as a centered card of exact width */
           [role="dialog"] {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            display: block !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
             transform: none !important;
-            width: 100% !important;
+            width: 400px !important;
             max-width: 100% !important;
+            margin: 0 auto !important;
             height: auto !important;
             max-height: none !important;
             border: none !important;
             box-shadow: none !important;
             padding: 0 !important;
-            margin: 0 !important;
             background: white !important;
             overflow: visible !important;
             page-break-inside: avoid !important;
@@ -288,12 +296,24 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             display: none !important;
           }
 
-          /* Ensure receipt content takes full height and prints nicely */
+          /* Ensure receipt content behaves as a simple block with padding */
           #receipt-content {
-            padding: 0 !important;
-            margin: 0 !important;
-            overflow: visible !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
             max-height: none !important;
+            overflow: visible !important;
+            padding: 24px !important;
+            margin: 0 !important;
+            background: white !important;
+            flex: none !important;
+          }
+
+          /* Prevent any element inside the receipt from splitting across pages */
+          #receipt-content,
+          #receipt-content * {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `}} />
