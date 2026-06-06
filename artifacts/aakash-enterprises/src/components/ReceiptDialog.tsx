@@ -46,11 +46,14 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
       const element = document.getElementById("receipt-content");
       if (!element) throw new Error("Receipt content element not found");
 
-      // Temporarily expand element for capture (to bypass overflow-y-auto scroll boundary)
+      // Save scroll position & styling to restore later
+      const originalScrollTop = element.scrollTop;
       const originalOverflow = element.style.overflow;
       const originalHeight = element.style.height;
       const originalMaxHeight = element.style.maxHeight;
 
+      // Reset scroll to top and temporarily expand element to capture full content
+      element.scrollTop = 0;
       element.style.overflow = "visible";
       element.style.height = "auto";
       element.style.maxHeight = "none";
@@ -59,25 +62,36 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         scale: 2, // 2x scale for crisp quality
         useCORS: true,
         logging: false,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0
       });
 
-      // Restore styling
+      // Restore scroll & styling
       element.style.overflow = originalOverflow;
       element.style.height = originalHeight;
       element.style.maxHeight = originalMaxHeight;
+      element.scrollTop = originalScrollTop;
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-      // Define width as 210mm (A4 width)
+      // Create a standard A4 PDF document (210mm x 297mm)
       const pdfWidth = 210;
-      // Calculate height to preserve aspect ratio
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = 297;
+      
+      // Calculate receipt dimensions to fit nicely centered on A4
+      const receiptWidth = 120; // 120mm wide receipt card
+      const receiptHeight = (canvas.height * receiptWidth) / canvas.width;
+      
+      const xOffset = (pdfWidth - receiptWidth) / 2;
+      const yOffset = Math.max(15, (pdfHeight - receiptHeight) / 2); // Center vertically, min 15mm top margin
 
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: [pdfWidth, pdfHeight]
+        format: "a4"
       });
 
       doc.setProperties({
@@ -86,7 +100,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         creator: 'Aakash Enterprises'
       });
 
-      doc.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      doc.addImage(imgData, "JPEG", xOffset, yOffset, receiptWidth, receiptHeight);
 
       const pdfBase64 = doc.output("datauristring").split(",")[1];
 
@@ -279,7 +293,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             transform: none !important;
             width: 400px !important;
             max-width: 100% !important;
-            margin: 0 auto !important;
+            margin: 40px auto !important;
             height: auto !important;
             max-height: none !important;
             border: none !important;
