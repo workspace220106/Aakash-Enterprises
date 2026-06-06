@@ -416,10 +416,10 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             margin: 0;
           }
 
-          /* Force page & body to allow overflow and height scaling */
+          /* Force page & body to fill viewport for centering */
           html, body {
             overflow: visible !important;
-            height: auto !important;
+            height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
@@ -432,13 +432,15 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             display: none !important;
           }
 
-          /* Reset portal container */
+          /* Use the portal as a full-page flex container to center the receipt */
           [data-radix-portal] {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            position: static !important;
             width: 100% !important;
-            display: block !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
           }
 
           /* Force the dialog content to print as a centered card of exact width */
@@ -450,7 +452,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             transform: none !important;
             width: 400px !important;
             max-width: 100% !important;
-            margin: 40px auto !important;
+            margin: auto !important;
             height: auto !important;
             max-height: none !important;
             border: none !important;
