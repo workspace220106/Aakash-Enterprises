@@ -124,6 +124,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold uppercase tracking-widest">Aakash Enterprises</h1>
             <p className="text-xs text-slate-500">Retail & Wholesale Cold Drinks</p>
+            <p className="text-xs font-semibold text-slate-600 mt-1">GSTIN: wertyuio123456789</p>
             <div className="mt-2 border-y border-dashed border-slate-300 py-2">
               <p>RECEIPT #{sale.id.toString().padStart(6, '0')}</p>
               <p>{new Date(sale.date).toLocaleString('en-IN')}</p>
