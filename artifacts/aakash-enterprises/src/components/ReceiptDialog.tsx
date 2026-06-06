@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, X, Send } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { SaleWithDetails } from "@workspace/api-client-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ReceiptDialogProps {
   sale: SaleWithDetails | null;
@@ -15,6 +15,15 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
   if (!sale) return null;
 
   const [isSharingPDF, setIsSharingPDF] = useState(false);
+
+  useEffect(() => {
+    if (!open || !sale) return;
+    const originalTitle = document.title;
+    document.title = `Aakash Enterprises - GSTIN wertyuio123456789 - Receipt #${sale.id.toString().padStart(6, '0')}`;
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [open, sale]);
 
   const handlePrint = () => {
     window.print();
@@ -69,6 +78,12 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         orientation: "portrait",
         unit: "mm",
         format: [pdfWidth, pdfHeight]
+      });
+
+      doc.setProperties({
+        title: `Receipt #${sale.id.toString().padStart(6, '0')} - Aakash Enterprises`,
+        subject: `GSTIN: wertyuio123456789`,
+        creator: 'Aakash Enterprises'
       });
 
       doc.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
