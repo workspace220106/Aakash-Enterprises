@@ -306,7 +306,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}><X className="w-4 h-4"/></Button>
         </div>
 
-        <div id="receipt-content" className="p-8 font-mono text-sm text-slate-800 overflow-y-auto flex-1 bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div id="receipt-content" className="p-8 font-mono text-sm text-slate-800 overflow-y-auto flex-1 bg-white no-scrollbar">
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold uppercase tracking-widest">Aakash Enterprises</h1>
             <p className="text-xs text-slate-500">Retail & Wholesale Cold Drinks</p>
