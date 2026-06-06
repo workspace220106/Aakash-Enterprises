@@ -55,40 +55,36 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
         return `Rs.${formatted}`;
       };
 
-      // ── First pass: measure total height to center vertically ──
+      // ── Measure total height (must exactly match y += increments below) ──
       let totalH = 0;
-      totalH += 8;   // shop name
-      totalH += 5;   // tagline
-      totalH += 5;   // GSTIN
-      totalH += 4;   // gap before dashed line
-      totalH += 0.5; // dashed line
-      totalH += 5;   // receipt #
-      totalH += 5;   // date
-      totalH += 0.5; // dashed line
-      totalH += 6;   // gap
-      totalH += 4;   // "CUSTOMER" label
-      totalH += 5;   // customer name
-      totalH += 6;   // gap
-      totalH += 0.3; // table header border
-      totalH += 5;   // header row
-      totalH += sale.items.length * 7; // item rows
-      totalH += 0.5; // thick border
+      totalH += 7;    // shop name (y += 7)
+      totalH += 4.5;  // tagline (y += 4.5)
+      totalH += 5;    // GSTIN (y += 5)
+      totalH += 5;    // dashed line + space (y += 5)
+      totalH += 5;    // receipt # (y += 5)
+      totalH += 4;    // date (y += 4)
+      totalH += 6;    // dashed line + space (y += 6)
+      totalH += 4;    // CUSTOMER label (y += 4)
+      totalH += 7;    // customer name (y += 7)
+      totalH += 2;    // table header text to line (y += 2)
+      totalH += 4;    // after header line (y += 4)
+      totalH += sale.items.length * 7; // item rows (y += 7 each)
+      totalH += 4;    // thick separator + space (y += 4)
       const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
       const hasDiscount = subtotal > sale.total + 0.01;
       if (hasDiscount) {
-        totalH += 5;  // subtotal row
-        totalH += 5;  // discount row
-        totalH += 0.3; // thin border
+        totalH += 5;  // subtotal row (y += 5)
+        totalH += 4;  // discount row (y += 4)
+        totalH += 4;  // thin separator + space (y += 4)
       }
-      totalH += 8;   // grand total row
+      totalH += 8;    // grand total row (y += 8)
       if (sale.notes) {
-        totalH += 8; // notes section
+        totalH += 14;  // notes section (y += 14)
       }
-      totalH += 6;   // gap before footer
-      totalH += 0.5; // dashed line
-      totalH += 6;   // thank you
-      totalH += 5;   // please visit again
-      totalH += 4;   // bottom padding
+      totalH += 2;    // gap before footer (y += 2)
+      totalH += 6;    // footer dashed line + space (y += 6)
+      totalH += 5;    // "Thank you" (y += 5)
+      totalH += 3;    // "Please visit again" text height (final text, no y increment)
 
       const startY = Math.max(15, (pageH - totalH) / 2);
 
