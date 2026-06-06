@@ -239,6 +239,14 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          /* Force page & body to allow overflow and height scaling */
+          html, body {
+            overflow: visible !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
           /* Hide the entire main React application and overlays */
           #root,
           .print\\:hidden,
@@ -271,6 +279,8 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
             margin: 0 !important;
             background: white !important;
             overflow: visible !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
 
           /* Hide any close buttons or action buttons */
