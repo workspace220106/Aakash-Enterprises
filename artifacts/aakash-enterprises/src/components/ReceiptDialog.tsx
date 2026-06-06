@@ -30,104 +30,48 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     }
 
     try {
-      // Dynamically import jspdf
+      // Dynamically import jspdf and html2canvas
       const { jsPDF } = await import("jspdf");
+      const { default: html2canvas } = await import("html2canvas");
+
+      const element = document.getElementById("receipt-content");
+      if (!element) throw new Error("Receipt content element not found");
+
+      // Temporarily expand element for capture (to bypass overflow-y-auto scroll boundary)
+      const originalOverflow = element.style.overflow;
+      const originalHeight = element.style.height;
+      const originalMaxHeight = element.style.maxHeight;
+
+      element.style.overflow = "visible";
+      element.style.height = "auto";
+      element.style.maxHeight = "none";
+
+      const canvas = await html2canvas(element, {
+        scale: 2, // 2x scale for crisp quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      });
+
+      // Restore styling
+      element.style.overflow = originalOverflow;
+      element.style.height = originalHeight;
+      element.style.maxHeight = originalMaxHeight;
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+      // Define width as 210mm (A4 width)
+      const pdfWidth = 210;
+      // Calculate height to preserve aspect ratio
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a4",
+        format: [pdfWidth, pdfHeight]
       });
 
-      // 1. Generate clean native PDF vector document (Courier monospaced receipt layout)
-      let y = 30;
-      doc.setFont("courier", "bold");
-      doc.setFontSize(22);
-      doc.text("AAKASH ENTERPRISES", 105, y, { align: "center" });
-      
-      y += 8;
-      doc.setFont("courier", "normal");
-      doc.setFontSize(10);
-      doc.text("Retail & Wholesale Cold Drinks", 105, y, { align: "center" });
-      
-      y += 10;
-      doc.line(20, y, 190, y);
-      
-      y += 8;
-      doc.setFont("courier", "bold");
-      doc.text(`RECEIPT #${sale.id.toString().padStart(6, '0')}`, 20, y);
-      doc.setFont("courier", "normal");
-      doc.text(new Date(sale.date).toLocaleString('en-IN'), 190, y, { align: "right" });
-      
-      y += 6;
-      doc.text(`Customer: ${sale.customerName || "Walk-in Customer"}`, 20, y);
-      
-      y += 8;
-      doc.line(20, y, 190, y);
-      
-      y += 10;
-      doc.setFont("courier", "bold");
-      doc.text("Item", 20, y);
-      doc.text("Qty", 120, y, { align: "center" });
-      doc.text("Price", 155, y, { align: "right" });
-      doc.text("Total", 190, y, { align: "right" });
-      
-      y += 4;
-      doc.line(20, y, 190, y);
-      
-      doc.setFont("courier", "normal");
-      sale.items.forEach(item => {
-        y += 8;
-        if (y > 260) {
-          doc.addPage();
-          y = 30;
-          doc.setFont("courier", "bold");
-          doc.text("Item", 20, y);
-          doc.text("Qty", 120, y, { align: "center" });
-          doc.text("Price", 155, y, { align: "right" });
-          doc.text("Total", 190, y, { align: "right" });
-          y += 4;
-          doc.line(20, y, 190, y);
-          doc.setFont("courier", "normal");
-          y += 8;
-        }
-
-        let name = item.productName || "";
-        if (name.length > 30) name = name.substring(0, 27) + "...";
-        doc.text(name, 20, y);
-        doc.text(String(item.quantity), 120, y, { align: "center" });
-        doc.text(`INR ${item.price.toFixed(2)}`, 155, y, { align: "right" });
-        doc.text(`INR ${item.total.toFixed(2)}`, 190, y, { align: "right" });
-      });
-      
-      y += 8;
-      doc.line(20, y, 190, y);
-      
-      y += 10;
-      const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
-      const discount = subtotal - sale.total;
-      const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
-      
-      if (discount > 0.01) {
-        doc.text("Subtotal:", 130, y);
-        doc.text(`INR ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
-        
-        y += 6;
-        doc.text(`Discount (${discountPercent.toFixed(2)}%):`, 130, y);
-        doc.text(`-INR ${discount.toFixed(2)}`, 190, y, { align: "right" });
-        y += 6;
-      }
-      
-      doc.setFont("courier", "bold");
-      doc.text("GRAND TOTAL:", 130, y);
-      doc.text(`INR ${sale.total.toFixed(2)}`, 190, y, { align: "right" });
-      
-      y += 15;
-      doc.setFont("courier", "italic");
-      doc.setFontSize(10);
-      doc.text("Thank you for your business!", 105, y, { align: "center" });
-      y += 5;
-      doc.text("Please visit again", 105, y, { align: "center" });
+      doc.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
       const pdfBase64 = doc.output("datauristring").split(",")[1];
 
@@ -170,13 +114,13 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white print:shadow-none print:border-none">
-        <div className="print:hidden p-4 border-b flex justify-between items-center bg-slate-50">
+      <DialogContent className="max-w-[400px] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-white print:shadow-none print:border-none">
+        <div className="print:hidden p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
           <h2 className="font-bold flex items-center gap-2"><Printer className="w-4 h-4"/> Receipt</h2>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}><X className="w-4 h-4"/></Button>
         </div>
 
-        <div id="receipt-content" className="p-8 font-mono text-sm text-slate-800">
+        <div id="receipt-content" className="p-8 font-mono text-sm text-slate-800 overflow-y-auto flex-1 bg-white">
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold uppercase tracking-widest">Aakash Enterprises</h1>
             <p className="text-xs text-slate-500">Retail & Wholesale Cold Drinks</p>
@@ -258,7 +202,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50 border-t print:hidden flex flex-col gap-2">
+        <div className="p-4 bg-slate-50 border-t print:hidden flex flex-col gap-2 shrink-0">
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Close
