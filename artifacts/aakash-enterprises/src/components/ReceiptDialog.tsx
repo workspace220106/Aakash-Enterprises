@@ -11,13 +11,155 @@ interface ReceiptDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+async function generateReceiptPDF(sale: SaleWithDetails) {
+  const { jsPDF } = await import("jspdf");
+
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // 1. Generate clean native PDF vector document (Courier monospaced receipt layout)
+  let y = 30;
+  doc.setFont("courier", "bold");
+  doc.setFontSize(22);
+  doc.text("AAKASH ENTERPRISES", 105, y, { align: "center" });
+  
+  y += 8;
+  doc.setFont("courier", "normal");
+  doc.setFontSize(10);
+  doc.text("Retail & Wholesale Cold Drinks", 105, y, { align: "center" });
+  
+  y += 6;
+  doc.setFontSize(9);
+  doc.text("GSTIN: qwertyuio123456789", 105, y, { align: "center" });
+  
+  y += 8;
+  doc.line(20, y, 190, y);
+  
+  y += 8;
+  doc.setFont("courier", "bold");
+  doc.text(`RECEIPT #${sale.id.toString().padStart(6, '0')}`, 20, y);
+  doc.setFont("courier", "normal");
+  doc.text(new Date(sale.date).toLocaleString('en-IN'), 190, y, { align: "right" });
+  
+  y += 6;
+  doc.text(`Customer: ${sale.customerName || "Walk-in Customer"}`, 20, y);
+  
+  y += 8;
+  doc.line(20, y, 190, y);
+  
+  y += 10;
+  doc.setFont("courier", "bold");
+  doc.text("Item", 20, y);
+  doc.text("Qty", 120, y, { align: "center" });
+  doc.text("Price", 155, y, { align: "right" });
+  doc.text("Total", 190, y, { align: "right" });
+  
+  y += 4;
+  doc.line(20, y, 190, y);
+  
+  doc.setFont("courier", "normal");
+  sale.items.forEach(item => {
+    y += 8;
+    if (y > 260) {
+      doc.addPage();
+      y = 30;
+      doc.setFont("courier", "bold");
+      doc.text("Item", 20, y);
+      doc.text("Qty", 120, y, { align: "center" });
+      doc.text("Price", 155, y, { align: "right" });
+      doc.text("Total", 190, y, { align: "right" });
+      y += 4;
+      doc.line(20, y, 190, y);
+      doc.setFont("courier", "normal");
+      y += 8;
+    }
+
+    let name = item.productName || "";
+    if (name.length > 30) name = name.substring(0, 27) + "...";
+    doc.text(name, 20, y);
+    doc.text(String(item.quantity), 120, y, { align: "center" });
+    doc.text(`INR ${item.price.toFixed(2)}`, 155, y, { align: "right" });
+    doc.text(`INR ${item.total.toFixed(2)}`, 190, y, { align: "right" });
+  });
+  
+  y += 8;
+  doc.line(20, y, 190, y);
+  
+  y += 10;
+  const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
+  const discount = subtotal - sale.total;
+  const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
+  
+  if (discount > 0.01) {
+    doc.text("Subtotal:", 130, y);
+    doc.text(`INR ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
+    
+    y += 6;
+    doc.text(`Discount (${discountPercent.toFixed(2)}%):`, 130, y);
+    doc.text(`-INR ${discount.toFixed(2)}`, 190, y, { align: "right" });
+    y += 6;
+  }
+  
+  doc.setFont("courier", "bold");
+  doc.text("GRAND TOTAL:", 130, y);
+  doc.text(`INR ${sale.total.toFixed(2)}`, 190, y, { align: "right" });
+  
+  y += 15;
+  doc.setFont("courier", "italic");
+  doc.setFontSize(10);
+  doc.text("Thank you for your business!", 105, y, { align: "center" });
+  y += 5;
+  doc.text("Please visit again", 105, y, { align: "center" });
+
+  return doc;
+}
+
 export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) {
   if (!sale) return null;
 
   const [isSharingPDF, setIsSharingPDF] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!sale) return;
+    setIsPrinting(true);
+
+    try {
+      const doc = await generateReceiptPDF(sale);
+      const blob = doc.output("blob");
+      const blobUrl = URL.createObjectURL(blob);
+
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.opacity = "0";
+      iframe.style.pointerEvents = "none";
+      iframe.src = blobUrl;
+
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          // Clean up after the print dialog gets dismissed
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(blobUrl);
+          }, 1000);
+        }, 100);
+      };
+    } catch (error) {
+      console.error("Error printing receipt: ", error);
+      alert("Failed to prepare print layout. Please try again.");
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const handleWhatsAppPDFShare = async () => {
@@ -30,109 +172,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     }
 
     try {
-      // Dynamically import jspdf
-      const { jsPDF } = await import("jspdf");
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      // 1. Generate clean native PDF vector document (Courier monospaced receipt layout)
-      let y = 30;
-      doc.setFont("courier", "bold");
-      doc.setFontSize(22);
-      doc.text("AAKASH ENTERPRISES", 105, y, { align: "center" });
-      
-      y += 8;
-      doc.setFont("courier", "normal");
-      doc.setFontSize(10);
-      doc.text("Retail & Wholesale Cold Drinks", 105, y, { align: "center" });
-      
-      y += 6;
-      doc.setFontSize(9);
-      doc.text("GSTIN: qwertyuio123456789", 105, y, { align: "center" });
-      
-      y += 8;
-      doc.line(20, y, 190, y);
-      
-      y += 8;
-      doc.setFont("courier", "bold");
-      doc.text(`RECEIPT #${sale.id.toString().padStart(6, '0')}`, 20, y);
-      doc.setFont("courier", "normal");
-      doc.text(new Date(sale.date).toLocaleString('en-IN'), 190, y, { align: "right" });
-      
-      y += 6;
-      doc.text(`Customer: ${sale.customerName || "Walk-in Customer"}`, 20, y);
-      
-      y += 8;
-      doc.line(20, y, 190, y);
-      
-      y += 10;
-      doc.setFont("courier", "bold");
-      doc.text("Item", 20, y);
-      doc.text("Qty", 120, y, { align: "center" });
-      doc.text("Price", 155, y, { align: "right" });
-      doc.text("Total", 190, y, { align: "right" });
-      
-      y += 4;
-      doc.line(20, y, 190, y);
-      
-      doc.setFont("courier", "normal");
-      sale.items.forEach(item => {
-        y += 8;
-        if (y > 260) {
-          doc.addPage();
-          y = 30;
-          doc.setFont("courier", "bold");
-          doc.text("Item", 20, y);
-          doc.text("Qty", 120, y, { align: "center" });
-          doc.text("Price", 155, y, { align: "right" });
-          doc.text("Total", 190, y, { align: "right" });
-          y += 4;
-          doc.line(20, y, 190, y);
-          doc.setFont("courier", "normal");
-          y += 8;
-        }
-
-        let name = item.productName || "";
-        if (name.length > 30) name = name.substring(0, 27) + "...";
-        doc.text(name, 20, y);
-        doc.text(String(item.quantity), 120, y, { align: "center" });
-        doc.text(`INR ${item.price.toFixed(2)}`, 155, y, { align: "right" });
-        doc.text(`INR ${item.total.toFixed(2)}`, 190, y, { align: "right" });
-      });
-      
-      y += 8;
-      doc.line(20, y, 190, y);
-      
-      y += 10;
-      const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
-      const discount = subtotal - sale.total;
-      const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
-      
-      if (discount > 0.01) {
-        doc.text("Subtotal:", 130, y);
-        doc.text(`INR ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
-        
-        y += 6;
-        doc.text(`Discount (${discountPercent.toFixed(2)}%):`, 130, y);
-        doc.text(`-INR ${discount.toFixed(2)}`, 190, y, { align: "right" });
-        y += 6;
-      }
-      
-      doc.setFont("courier", "bold");
-      doc.text("GRAND TOTAL:", 130, y);
-      doc.text(`INR ${sale.total.toFixed(2)}`, 190, y, { align: "right" });
-      
-      y += 15;
-      doc.setFont("courier", "italic");
-      doc.setFontSize(10);
-      doc.text("Thank you for your business!", 105, y, { align: "center" });
-      y += 5;
-      doc.text("Please visit again", 105, y, { align: "center" });
-
+      const doc = await generateReceiptPDF(sale);
       const pdfBase64 = doc.output("datauristring").split(",")[1];
 
       // 2. Upload PDF to backend
@@ -174,10 +214,10 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white print:shadow-none print:border-none">
+      <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white">
         <div className="print:hidden p-4 border-b flex justify-between items-center bg-slate-50">
           <h2 className="font-bold flex items-center gap-2"><Printer className="w-4 h-4"/> Receipt</h2>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}><X className="w-4 h-4"/></Button>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={isPrinting || isSharingPDF}><X className="w-4 h-4"/></Button>
         </div>
 
         <div id="receipt-content" className="p-8 font-mono text-sm text-slate-800">
@@ -265,15 +305,25 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
         <div className="p-4 bg-slate-50 border-t print:hidden flex flex-col gap-2">
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              className="flex-1" 
+              onClick={() => onOpenChange(false)}
+              disabled={isPrinting || isSharingPDF}
+            >
               Close
             </Button>
-            <Button variant="secondary" className="flex-1 gap-2 border border-slate-200" onClick={handlePrint}>
-              <Printer className="w-4 h-4" /> Print
+            <Button 
+              variant="secondary" 
+              className="flex-1 gap-2 border border-slate-200" 
+              onClick={handlePrint}
+              disabled={isPrinting || isSharingPDF}
+            >
+              <Printer className="w-4 h-4" /> {isPrinting ? "Preparing..." : "Print"}
             </Button>
           </div>
           <Button 
-            disabled={isSharingPDF}
+            disabled={isSharingPDF || isPrinting}
             className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center py-5 rounded-xl shadow-lg hover:shadow-emerald-600/20 transition-all disabled:bg-emerald-800 disabled:opacity-70" 
             onClick={handleWhatsAppPDFShare}
           >
@@ -281,31 +331,6 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
           </Button>
         </div>
       </DialogContent>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          #root {
-            display: none !important;
-          }
-          body * {
-            visibility: hidden;
-          }
-          #receipt-content, #receipt-content * {
-            visibility: visible;
-          }
-          #receipt-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-        }
-      `}} />
     </Dialog>
   );
 }
