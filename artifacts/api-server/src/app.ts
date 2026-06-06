@@ -10,6 +10,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request timing middleware
+app.use((req, res, next) => {
+  const start = performance.now();
+  res.on("finish", () => {
+    const duration = performance.now() - start;
+    console.log(`[API] ${req.method} ${req.originalUrl} - ${res.statusCode} - ${duration.toFixed(2)}ms`);
+  });
+  next();
+});
+
 // Serve static receipts directory
 const receiptsDir = path.join(process.cwd(), "public", "receipts");
 if (!fs.existsSync(receiptsDir)) {
