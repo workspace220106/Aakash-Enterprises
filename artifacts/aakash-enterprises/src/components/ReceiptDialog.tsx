@@ -30,35 +30,110 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     }
 
     try {
-      // Dynamically import jspdf and html2canvas
+      // Dynamically import jspdf
       const { jsPDF } = await import("jspdf");
-      const html2canvas = (await import("html2canvas")).default;
 
-      const receiptElement = document.getElementById("receipt-content");
-      if (!receiptElement) {
-        throw new Error("Receipt element not found");
-      }
-
-      const canvas = await html2canvas(receiptElement, {
-        scale: 2, // High resolution
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      
-      const pdf = new jsPDF({
+      const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      // 1. Generate clean native PDF vector document (Courier monospaced receipt layout)
+      let y = 30;
+      doc.setFont("courier", "bold");
+      doc.setFontSize(22);
+      doc.text("AAKASH ENTERPRISES", 105, y, { align: "center" });
+      
+      y += 8;
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+      doc.text("Retail & Wholesale Cold Drinks", 105, y, { align: "center" });
+      
+      y += 6;
+      doc.setFontSize(9);
+      doc.text("GSTIN: qwertyuio123456789", 105, y, { align: "center" });
+      
+      y += 8;
+      doc.line(20, y, 190, y);
+      
+      y += 8;
+      doc.setFont("courier", "bold");
+      doc.text(`RECEIPT #${sale.id.toString().padStart(6, '0')}`, 20, y);
+      doc.setFont("courier", "normal");
+      doc.text(new Date(sale.date).toLocaleString('en-IN'), 190, y, { align: "right" });
+      
+      y += 6;
+      doc.text(`Customer: ${sale.customerName || "Walk-in Customer"}`, 20, y);
+      
+      y += 8;
+      doc.line(20, y, 190, y);
+      
+      y += 10;
+      doc.setFont("courier", "bold");
+      doc.text("Item", 20, y);
+      doc.text("Qty", 120, y, { align: "center" });
+      doc.text("Price", 155, y, { align: "right" });
+      doc.text("Total", 190, y, { align: "right" });
+      
+      y += 4;
+      doc.line(20, y, 190, y);
+      
+      doc.setFont("courier", "normal");
+      sale.items.forEach(item => {
+        y += 8;
+        if (y > 260) {
+          doc.addPage();
+          y = 30;
+          doc.setFont("courier", "bold");
+          doc.text("Item", 20, y);
+          doc.text("Qty", 120, y, { align: "center" });
+          doc.text("Price", 155, y, { align: "right" });
+          doc.text("Total", 190, y, { align: "right" });
+          y += 4;
+          doc.line(20, y, 190, y);
+          doc.setFont("courier", "normal");
+          y += 8;
+        }
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        let name = item.productName || "";
+        if (name.length > 30) name = name.substring(0, 27) + "...";
+        doc.text(name, 20, y);
+        doc.text(String(item.quantity), 120, y, { align: "center" });
+        doc.text(`INR ${item.price.toFixed(2)}`, 155, y, { align: "right" });
+        doc.text(`INR ${item.total.toFixed(2)}`, 190, y, { align: "right" });
+      });
+      
+      y += 8;
+      doc.line(20, y, 190, y);
+      
+      y += 10;
+      const subtotal = sale.items.reduce((sum, item) => sum + item.total, 0);
+      const discount = subtotal - sale.total;
+      const discountPercent = subtotal > 0 ? ((subtotal - sale.total) / subtotal) * 100 : 0;
+      
+      if (discount > 0.01) {
+        doc.text("Subtotal:", 130, y);
+        doc.text(`INR ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
+        
+        y += 6;
+        doc.text(`Discount (${discountPercent.toFixed(2)}%):`, 130, y);
+        doc.text(`-INR ${discount.toFixed(2)}`, 190, y, { align: "right" });
+        y += 6;
+      }
+      
+      doc.setFont("courier", "bold");
+      doc.text("GRAND TOTAL:", 130, y);
+      doc.text(`INR ${sale.total.toFixed(2)}`, 190, y, { align: "right" });
+      
+      y += 15;
+      doc.setFont("courier", "italic");
+      doc.setFontSize(10);
+      doc.text("Thank you for your business!", 105, y, { align: "center" });
+      y += 5;
+      doc.text("Please visit again", 105, y, { align: "center" });
 
-      const pdfBase64 = pdf.output("datauristring").split(",")[1];
+      const pdfBase64 = doc.output("datauristring").split(",")[1];
 
       // 2. Upload PDF to backend
       const response = await fetch(`/api/sales/${sale.id}/pdf`, {
@@ -209,6 +284,9 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          #root {
+            display: none !important;
+          }
           body * {
             visibility: hidden;
           }
