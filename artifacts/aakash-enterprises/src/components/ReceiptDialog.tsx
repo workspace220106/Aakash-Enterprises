@@ -223,22 +223,51 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body * {
-            visibility: hidden;
+          /* Hide the entire main React application and overlays */
+          #root,
+          .print\\:hidden,
+          [data-radix-portal] > div:first-child {
+            display: none !important;
           }
-          #receipt-content, #receipt-content * {
-            visibility: visible;
+
+          /* Reset portal container */
+          [data-radix-portal] {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            display: block !important;
           }
-          #receipt-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+
+          /* Force the dialog content to print as a simple block */
+          [role="dialog"] {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            transform: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            border: none !important;
+            box-shadow: none !important;
             padding: 0 !important;
             margin: 0 !important;
+            background: white !important;
+            overflow: visible !important;
           }
-          .print\\:hidden {
+
+          /* Hide any close buttons or action buttons */
+          [role="dialog"] button {
             display: none !important;
+          }
+
+          /* Ensure receipt content takes full height and prints nicely */
+          #receipt-content {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            max-height: none !important;
           }
         }
       `}} />
