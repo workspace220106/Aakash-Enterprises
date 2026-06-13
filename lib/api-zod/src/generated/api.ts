@@ -201,6 +201,7 @@ export const GetCustomerSalesResponseItem = zod.object({
   customerName: zod.string().nullish(),
   customerPhone: zod.string().nullish(),
   total: zod.number(),
+  amountPaid: zod.number().nullable(),
   notes: zod.string().nullish(),
   date: zod.string(),
   items: zod.array(
@@ -231,6 +232,7 @@ export const GetSalesResponseItem = zod.object({
   customerName: zod.string().nullish(),
   customerPhone: zod.string().nullish(),
   total: zod.number(),
+  amountPaid: zod.number().nullable(),
   notes: zod.string().nullish(),
   date: zod.string(),
   items: zod.array(
@@ -252,6 +254,7 @@ export const GetSalesResponse = zod.array(GetSalesResponseItem);
 export const CreateSaleBody = zod.object({
   customerId: zod.number().nullish(),
   total: zod.number().nullish(),
+  amountPaid: zod.number().nullish(),
   items: zod.array(
     zod.object({
       productId: zod.number(),
@@ -260,6 +263,38 @@ export const CreateSaleBody = zod.object({
     }),
   ),
   notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Update the amount paid for a sale
+ */
+export const UpdateSalePaymentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSalePaymentBody = zod.object({
+  amountPaid: zod.number(),
+});
+
+export const UpdateSalePaymentResponse = zod.object({
+  id: zod.number(),
+  customerId: zod.number().nullish(),
+  customerName: zod.string().nullish(),
+  customerPhone: zod.string().nullish(),
+  total: zod.number(),
+  amountPaid: zod.number().nullable(),
+  notes: zod.string().nullish(),
+  date: zod.string(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      productId: zod.number(),
+      productName: zod.string(),
+      quantity: zod.number(),
+      price: zod.number(),
+      total: zod.number(),
+    }),
+  ),
 });
 
 /**

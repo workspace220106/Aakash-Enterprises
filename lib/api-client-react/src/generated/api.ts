@@ -33,6 +33,7 @@ import type {
   ProductProfitMargin,
   SaleWithDetails,
   TopProduct,
+  UpdateSalePaymentBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -1260,6 +1261,93 @@ export const useCreateSale = <
   TContext
 > => {
   return useMutation(getCreateSaleMutationOptions(options));
+};
+
+/**
+ * @summary Update the amount paid for a sale
+ */
+export const getUpdateSalePaymentUrl = (id: number) => {
+  return `/api/sales/${id}`;
+};
+
+export const updateSalePayment = async (
+  id: number,
+  updateSalePaymentBody: UpdateSalePaymentBody,
+  options?: RequestInit,
+): Promise<SaleWithDetails> => {
+  return customFetch<SaleWithDetails>(getUpdateSalePaymentUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateSalePaymentBody),
+  });
+};
+
+export const getUpdateSalePaymentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSalePayment>>,
+    TError,
+    { id: number; data: BodyType<UpdateSalePaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateSalePayment>>,
+  TError,
+  { id: number; data: BodyType<UpdateSalePaymentBody> },
+  TContext
+> => {
+  const mutationKey = ["updateSalePayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateSalePayment>>,
+    { id: number; data: BodyType<UpdateSalePaymentBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateSalePayment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateSalePaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateSalePayment>>
+>;
+export type UpdateSalePaymentMutationBody = BodyType<UpdateSalePaymentBody>;
+export type UpdateSalePaymentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update the amount paid for a sale
+ */
+export const useUpdateSalePayment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSalePayment>>,
+    TError,
+    { id: number; data: BodyType<UpdateSalePaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateSalePayment>>,
+  TError,
+  { id: number; data: BodyType<UpdateSalePaymentBody> },
+  TContext
+> => {
+  return useMutation(getUpdateSalePaymentMutationOptions(options));
 };
 
 /**

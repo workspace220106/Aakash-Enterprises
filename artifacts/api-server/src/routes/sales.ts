@@ -24,6 +24,7 @@ router.get("/sales", async (req, res) => {
         customerName: customersTable.name,
         customerPhone: customersTable.phone,
         total: salesTable.total,
+        amountPaid: salesTable.amountPaid,
         notes: salesTable.notes,
         date: salesTable.date
       })
@@ -71,6 +72,7 @@ router.get("/sales", async (req, res) => {
       customerName: sale.customerName,
       customerPhone: sale.customerPhone,
       total: parseFloat(sale.total),
+      amountPaid: sale.amountPaid !== null ? parseFloat(sale.amountPaid) : parseFloat(sale.total),
       notes: sale.notes,
       date: sale.date.toISOString(),
       items: itemsBySaleId[sale.id] || []
@@ -85,8 +87,8 @@ router.get("/sales", async (req, res) => {
 
 router.post("/sales", async (req, res) => {
   try {
-    const { customerId, items, notes, total: customTotal } = req.body;
-    console.log("[createSale] received total:", customTotal, "type:", typeof customTotal);
+    const { customerId, items, notes, total: customTotal, amountPaid } = req.body;
+    console.log("[createSale] received total:", customTotal, "type:", typeof customTotal, "amountPaid:", amountPaid);
 
     const calculatedTotal = items.reduce((sum: number, item: { quantity: number; price: number }) => sum + item.quantity * item.price, 0);
     const finalTotal = (customTotal !== undefined && customTotal !== null && !isNaN(Number(customTotal)))
@@ -99,6 +101,7 @@ router.post("/sales", async (req, res) => {
       .values({ 
         customerId: customerId ?? null, 
         total: String(finalTotal), 
+        amountPaid: amountPaid !== undefined && amountPaid !== null ? String(amountPaid) : String(finalTotal),
         notes: (() => {
           const discountPercent = calculatedTotal > 0 ? Math.max(0, ((calculatedTotal - finalTotal) / calculatedTotal) * 100) : 0;
           if (discountPercent > 0) {
@@ -153,6 +156,7 @@ router.post("/sales", async (req, res) => {
       customerName,
       customerPhone,
       total: parseFloat(sale.total),
+      amountPaid: sale.amountPaid !== null ? parseFloat(sale.amountPaid) : parseFloat(sale.total),
       notes: sale.notes,
       date: sale.date.toISOString(),
       items: saleItems.map((i: any) => ({
@@ -167,6 +171,70 @@ router.post("/sales", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to create sale" });
+  }
+});
+
+router.patch("/sales/:id", async (req, res) => {
+  try {
+    const saleId = parseInt(req.params.id);
+    const { amountPaid } = req.body;
+
+    if (amountPaid === undefined || isNaN(Number(amountPaid))) {
+      return res.status(400).json({ message: "Invalid amountPaid" });
+    }
+
+    const [sale] = await db
+      .update(salesTable)
+      .set({ amountPaid: String(amountPaid) })
+      .where(eq(salesTable.id, saleId))
+      .returning();
+
+    if (!sale) {
+      return res.status(404).json({ message: "Sale not found" });
+    }
+
+    let customerName: string | null = null;
+    let customerPhone: string | null = null;
+    if (sale.customerId) {
+      const [customer] = await db.select().from(customersTable).where(eq(customersTable.id, sale.customerId));
+      customerName = customer?.name ?? null;
+      customerPhone = customer?.phone ?? null;
+    }
+
+    const saleItems = await db
+      .select({
+        id: saleItemsTable.id,
+        productId: saleItemsTable.productId,
+        productName: productsTable.name,
+        quantity: saleItemsTable.quantity,
+        price: saleItemsTable.price,
+        total: saleItemsTable.total,
+      })
+      .from(saleItemsTable)
+      .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
+      .where(eq(saleItemsTable.saleId, sale.id));
+
+    return res.json({
+      id: sale.id,
+      customerId: sale.customerId,
+      customerName,
+      customerPhone,
+      total: parseFloat(sale.total),
+      amountPaid: sale.amountPaid !== null ? parseFloat(sale.amountPaid) : parseFloat(sale.total),
+      notes: sale.notes,
+      date: sale.date.toISOString(),
+      items: saleItems.map((i: any) => ({
+        id: i.id,
+        productId: i.productId,
+        productName: i.productName ?? "",
+        quantity: i.quantity,
+        price: parseFloat(i.price),
+        total: parseFloat(i.total),
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to update sale payment" });
   }
 });
 

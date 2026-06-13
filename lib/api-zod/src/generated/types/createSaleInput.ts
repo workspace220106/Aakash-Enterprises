@@ -10,6 +10,7 @@ import type { SaleItem } from "./saleItem";
 export interface CreateSaleInput {
   customerId?: number | null;
   total?: number | null;
+  amountPaid?: number | null;
   items: SaleItem[];
   notes?: string | null;
 }

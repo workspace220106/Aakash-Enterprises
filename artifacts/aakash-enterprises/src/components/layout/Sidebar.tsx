@@ -6,7 +6,8 @@ import {
   Users, 
   History, 
   BarChart3,
-  Droplets
+  Droplets,
+  Coins
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/sales", label: "Sales History", icon: History },
   { href: "/reports", label: "Reports & Analytics", icon: BarChart3 },
+  { href: "/credits", label: "Credits & Dues", icon: Coins },
 ];
 
 export interface SidebarContentProps {

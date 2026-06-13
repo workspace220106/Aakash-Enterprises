@@ -290,6 +290,34 @@ paths:
                 $ref: "#/components/schemas/SaleWithDetails"
 
   /sales/{id}:
+    patch:
+      operationId: updateSalePayment
+      tags: [sales]
+      summary: Update the amount paid for a sale
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amountPaid:
+                  type: number
+              required:
+                - amountPaid
+      responses:
+        "200":
+          description: Updated sale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleWithDetails"
     delete:
       operationId: deleteSale
       tags: [sales]
@@ -526,6 +554,9 @@ components:
         total:
           type: number
           nullable: true
+        amountPaid:
+          type: number
+          nullable: true
         items:
           type: array
           items:
@@ -552,6 +583,9 @@ components:
           nullable: true
         total:
           type: number
+        amountPaid:
+          type: number
+          nullable: true
         notes:
           type: string
           nullable: true
@@ -564,6 +598,7 @@ components:
       required:
         - id
         - total
+        - amountPaid
         - date
         - items
 

@@ -14,6 +14,7 @@ import POS from "./pages/POS";
 import Customers from "./pages/Customers";
 import Sales from "./pages/Sales";
 import Reports from "./pages/Reports";
+import Credits from "./pages/Credits";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/customers" component={Customers} />
           <Route path="/sales" component={Sales} />
           <Route path="/reports" component={Reports} />
+          <Route path="/credits" component={Credits} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

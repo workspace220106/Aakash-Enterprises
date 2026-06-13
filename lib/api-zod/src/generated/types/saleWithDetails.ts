@@ -13,6 +13,7 @@ export interface SaleWithDetails {
   customerName?: string | null;
   customerPhone?: string | null;
   total: number;
+  amountPaid: number | null;
   notes?: string | null;
   date: string;
   items: SaleItemWithProduct[];

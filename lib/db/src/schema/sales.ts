@@ -8,6 +8,7 @@ export const salesTable = pgTable("sales", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customersTable.id),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  amountPaid: numeric("amount_paid", { precision: 10, scale: 2 }),
   notes: text("notes"),
   date: timestamp("date").defaultNow().notNull(),
 }, (table) => [

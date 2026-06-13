@@ -62,6 +62,7 @@ export interface SaleItem {
 export interface CreateSaleInput {
   customerId?: number | null;
   total?: number | null;
+  amountPaid?: number | null;
   items: SaleItem[];
   notes?: string | null;
 }
@@ -81,6 +82,7 @@ export interface SaleWithDetails {
   customerName?: string | null;
   customerPhone?: string | null;
   total: number;
+  amountPaid: number | null;
   notes?: string | null;
   date: string;
   items: SaleItemWithProduct[];
@@ -160,4 +162,8 @@ export type GetSalesParams = {
   startDate?: string;
   endDate?: string;
   customerId?: number;
+};
+
+export type UpdateSalePaymentBody = {
+  amountPaid: number;
 };

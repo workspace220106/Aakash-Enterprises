@@ -26,3 +26,4 @@ export * from "./saleItemWithProduct";
 export * from "./saleWithDetails";
 export * from "./starProduct";
 export * from "./topProduct";
+export * from "./updateSalePaymentBody";

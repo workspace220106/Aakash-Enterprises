@@ -81,12 +81,19 @@ export default function POS() {
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const [customTotalStr, setCustomTotalStr] = useState<string>("");
-  // Use a ref so handleGenerateBill always reads the CURRENT value, never stale
+  const [amountPaidStr, setAmountPaidStr] = useState<string>("");
+  
+  // Use refs so handleGenerateBill always reads the CURRENT values, avoiding stale closures
   const customTotalRef = useRef<string>("");
+  const amountPaidRef = useRef<string>("");
 
-  // Sync ref whenever state changes
+  // Sync refs whenever state changes
   useEffect(() => {
     customTotalRef.current = customTotalStr;
+  });
+
+  useEffect(() => {
+    amountPaidRef.current = amountPaidStr;
   });
 
   // Reset when cart is cleared
@@ -94,21 +101,35 @@ export default function POS() {
     if (cart.length === 0) {
       setCustomTotalStr("");
       customTotalRef.current = "";
+      setAmountPaidStr("");
+      amountPaidRef.current = "";
     }
   }, [cart.length]);
 
   const handleGenerateBill = () => {
     if (cart.length === 0) return;
-    // Read from ref to get truly current value (avoids stale closure)
+    
+    // Read from refs to get truly current values
     const typedStr = customTotalRef.current.trim();
     const parsed = parseFloat(typedStr);
     const finalTotal = typedStr !== "" && !isNaN(parsed) ? parsed : total;
-    console.log("[POS] generating bill, typedStr:", typedStr, "finalTotal:", finalTotal, "calculatedTotal:", total);
+
+    const typedPaidStr = amountPaidRef.current.trim();
+    const parsedPaid = parseFloat(typedPaidStr);
+    const finalAmountPaid = typedPaidStr !== "" && !isNaN(parsedPaid) ? parsedPaid : finalTotal;
+
+    // Validation: Enforce customer selection if not fully paid (credit)
+    if (finalAmountPaid < finalTotal && !selectedCustomer) {
+      return alert("Please select a registered customer to record this credit transaction!");
+    }
+
+    console.log("[POS] generating bill, typedStr:", typedStr, "finalTotal:", finalTotal, "amountPaid:", finalAmountPaid, "calculatedTotal:", total);
     createSaleMutation.mutate({
       data: {
         customerId: selectedCustomer ? parseInt(selectedCustomer) : null,
         items: cart.map(c => ({ productId: c.id, quantity: c.quantity, price: c.price })),
-        total: finalTotal
+        total: finalTotal,
+        amountPaid: finalAmountPaid
       }
     });
   };
@@ -288,6 +309,44 @@ export default function POS() {
               />
             </div>
           </div>
+
+          {(() => {
+            const parsedTotal = parseFloat(customTotalStr);
+            const finalTotal = customTotalStr.trim() !== "" && !isNaN(parsedTotal) ? parsedTotal : total;
+            const parsedPaid = parseFloat(amountPaidStr);
+            const finalAmountPaid = amountPaidStr.trim() !== "" && !isNaN(parsedPaid) ? parsedPaid : finalTotal;
+            const dueAmount = Math.max(0, finalTotal - finalAmountPaid);
+
+            return (
+              <>
+                <div className="flex justify-between items-center mb-4 pt-2 border-t border-slate-200/50">
+                  <span className="text-slate-500 font-medium">Amount Paid</span>
+                  <div className="flex items-center gap-1 border-b-2 border-dashed border-slate-300 focus-within:border-primary transition-colors">
+                    <span className="text-lg font-bold text-slate-400">₹</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={amountPaidStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        setAmountPaidStr(val);
+                        amountPaidRef.current = val;
+                      }}
+                      placeholder={String(finalTotal)}
+                      className="w-28 text-right text-2xl font-bold text-slate-700 bg-transparent outline-none border-none py-1"
+                    />
+                  </div>
+                </div>
+
+                {dueAmount > 0 && (
+                  <div className="flex justify-between items-center mb-4 px-3 py-2 bg-amber-50 rounded-xl border border-amber-100/50 text-amber-700 text-xs font-semibold animate-pulse">
+                    <span>Credit Due Balance</span>
+                    <span>₹{dueAmount.toFixed(2)}</span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
           
           <div className="grid grid-cols-2 gap-3">
             <button 
