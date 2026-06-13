@@ -128,9 +128,10 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     setIsPrinting(true);
 
     try {
-      const doc = await generateReceiptPDF(sale);
-      const blob = doc.output("blob");
-      const blobUrl = URL.createObjectURL(blob);
+      const printContent = document.getElementById("receipt-content")?.innerHTML;
+      if (!printContent) {
+        throw new Error("Receipt content element not found");
+      }
 
       const iframe = document.createElement("iframe");
       iframe.style.position = "fixed";
@@ -139,21 +140,87 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
       iframe.style.border = "none";
       iframe.style.opacity = "0";
       iframe.style.pointerEvents = "none";
-      iframe.src = blobUrl;
-
       document.body.appendChild(iframe);
 
-      iframe.onload = () => {
+      const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (!iframeDoc) {
+        throw new Error("Could not access iframe document");
+      }
+
+      iframeDoc.write(`
+        <html>
+          <head>
+            <title>Receipt</title>
+            <style>
+              body {
+                font-family: Courier, monospace;
+                padding: 10px;
+                color: #000;
+                background: #fff;
+                margin: 0;
+                font-size: 12px;
+              }
+              .text-center { text-align: center; }
+              .mb-6 { margin-bottom: 15px; }
+              .mb-4 { margin-bottom: 10px; }
+              .text-xs { font-size: 10px; }
+              .text-slate-500 { color: #555; }
+              .mt-1 { margin-top: 4px; }
+              .mt-2 { margin-top: 8px; }
+              .border-y { border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
+              .py-2 { padding-top: 6px; padding-bottom: 6px; }
+              .uppercase { text-transform: uppercase; }
+              .tracking-widest { letter-spacing: 1px; }
+              .font-bold { font-weight: bold; }
+              .w-full { width: 100%; }
+              .border-b { border-bottom: 1px solid #000; }
+              .text-left { text-align: left; }
+              .pr-2 { padding-right: 4px; }
+              .text-right { text-align: right; }
+              .divide-y > tr { border-bottom: 1px solid #eee; }
+              .font-medium { font-weight: 500; }
+              .leading-tight { line-height: 1.25; }
+              .border-t-2 { border-top: 2px solid #000; }
+              .border-slate-800 { border-color: #000; }
+              .pt-4 { padding-top: 10px; }
+              .text-lg { font-size: 14px; }
+              .pt-2 { padding-top: 6px; }
+              .py-1 { padding-top: 3px; padding-bottom: 3px; }
+              .text-red-600 { color: #000; }
+              .font-semibold { font-weight: 600; }
+              .italic { font-style: italic; }
+              .text-\\[10px\\] { font-size: 9px; }
+              .text-slate-400 { color: #777; }
+              .bg-slate-50 { background-color: #fff; border: 1px solid #ccc; }
+              .border { border: 1px solid #000; }
+              .rounded { border-radius: 4px; }
+              .p-2 { padding: 6px; }
+              table { border-collapse: collapse; }
+              
+              @media print {
+                body {
+                  width: 100%;
+                  margin: 0;
+                  padding: 5px;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Give it a moment to render before printing
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
         setTimeout(() => {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          // Clean up after the print dialog gets dismissed
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            URL.revokeObjectURL(blobUrl);
-          }, 1000);
-        }, 100);
-      };
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 300);
     } catch (error) {
       console.error("Error printing receipt: ", error);
       alert("Failed to prepare print layout. Please try again.");
