@@ -103,73 +103,119 @@ router.get("/analytics/daily", async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [rows, itemRows] = await Promise.all([
+    const [sales, items] = await Promise.all([
       db
         .select({
+          id: salesTable.id,
           date: sql<string>`DATE(${salesTable.date})`,
-          revenue: sql<string>`SUM(${salesTable.total})`,
+          total: salesTable.total,
         })
         .from(salesTable)
-        .where(gte(salesTable.date, thirtyDaysAgo))
-        .groupBy(sql`DATE(${salesTable.date})`)
-        .orderBy(sql`DATE(${salesTable.date})`),
-        
+        .where(gte(salesTable.date, thirtyDaysAgo)),
       db
         .select({
-          date: sql<string>`DATE(${salesTable.date})`,
-          qty: sql<string>`SUM(${saleItemsTable.quantity})`,
+          saleId: saleItemsTable.saleId,
+          quantity: saleItemsTable.quantity,
+          purchasePrice: productsTable.purchasePrice,
         })
         .from(saleItemsTable)
+        .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
         .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
         .where(gte(salesTable.date, thirtyDaysAgo))
-        .groupBy(sql`DATE(${salesTable.date})`)
     ]);
 
-    const qtyMap: Record<string, number> = {};
-    itemRows.forEach((r: any) => { qtyMap[r.date] = parseInt(r.qty); });
+    const saleMetrics: Record<number, { cost: number; quantitySold: number }> = {};
+    items.forEach((item) => {
+      const saleId = item.saleId;
+      const qty = item.quantity || 0;
+      const pPrice = parseFloat(item.purchasePrice || "0");
+      const cost = qty * pPrice;
+      
+      if (!saleMetrics[saleId]) {
+        saleMetrics[saleId] = { cost: 0, quantitySold: 0 };
+      }
+      saleMetrics[saleId].cost += cost;
+      saleMetrics[saleId].quantitySold += qty;
+    });
 
-    res.json(rows.map((r: any) => ({
-      date: r.date,
-      revenue: parseFloat(r.revenue),
-      quantitySold: qtyMap[r.date] ?? 0,
-    })));
-  } catch {
+    const dailyData: Record<string, { date: string; revenue: number; quantitySold: number; profit: number }> = {};
+    sales.forEach((sale) => {
+      const dateStr = sale.date;
+      const total = parseFloat(sale.total);
+      const metrics = saleMetrics[sale.id] || { cost: 0, quantitySold: 0 };
+      const profit = total - metrics.cost;
+
+      if (!dailyData[dateStr]) {
+        dailyData[dateStr] = { date: dateStr, revenue: 0, quantitySold: 0, profit: 0 };
+      }
+      dailyData[dateStr].revenue += total;
+      dailyData[dateStr].quantitySold += metrics.quantitySold;
+      dailyData[dateStr].profit += parseFloat(profit.toFixed(2));
+    });
+
+    const result = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date));
+    res.json(result);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to fetch daily sales" });
   }
 });
 
 router.get("/analytics/monthly", async (req, res) => {
   try {
-    const [rows, itemRows] = await Promise.all([
+    const [sales, items] = await Promise.all([
       db
         .select({
+          id: salesTable.id,
           month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
-          revenue: sql<string>`SUM(${salesTable.total})`,
+          total: salesTable.total,
         })
-        .from(salesTable)
-        .groupBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
-        .orderBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
-        .limit(12),
-        
+        .from(salesTable),
       db
         .select({
-          month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
-          qty: sql<string>`SUM(${saleItemsTable.quantity})`,
+          saleId: saleItemsTable.saleId,
+          quantity: saleItemsTable.quantity,
+          purchasePrice: productsTable.purchasePrice,
         })
         .from(saleItemsTable)
-        .leftJoin(salesTable, eq(saleItemsTable.saleId, salesTable.id))
-        .groupBy(sql`TO_CHAR(${salesTable.date}, 'YYYY-MM')`)
+        .leftJoin(productsTable, eq(saleItemsTable.productId, productsTable.id))
     ]);
 
-    const qtyMap: Record<string, number> = {};
-    itemRows.forEach((r: any) => { qtyMap[r.month] = parseInt(r.qty); });
+    const saleMetrics: Record<number, { cost: number; quantitySold: number }> = {};
+    items.forEach((item) => {
+      const saleId = item.saleId;
+      const qty = item.quantity || 0;
+      const pPrice = parseFloat(item.purchasePrice || "0");
+      const cost = qty * pPrice;
+      
+      if (!saleMetrics[saleId]) {
+        saleMetrics[saleId] = { cost: 0, quantitySold: 0 };
+      }
+      saleMetrics[saleId].cost += cost;
+      saleMetrics[saleId].quantitySold += qty;
+    });
 
-    res.json(rows.map((r: any) => ({
-      month: r.month,
-      revenue: parseFloat(r.revenue),
-      quantitySold: qtyMap[r.month] ?? 0,
-    })));
-  } catch {
+    const monthlyData: Record<string, { month: string; revenue: number; quantitySold: number; profit: number }> = {};
+    sales.forEach((sale) => {
+      const monthStr = sale.month;
+      const total = parseFloat(sale.total);
+      const metrics = saleMetrics[sale.id] || { cost: 0, quantitySold: 0 };
+      const profit = total - metrics.cost;
+
+      if (!monthlyData[monthStr]) {
+        monthlyData[monthStr] = { month: monthStr, revenue: 0, quantitySold: 0, profit: 0 };
+      }
+      monthlyData[monthStr].revenue += total;
+      monthlyData[monthStr].quantitySold += metrics.quantitySold;
+      monthlyData[monthStr].profit += parseFloat(profit.toFixed(2));
+    });
+
+    const result = Object.values(monthlyData)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-12);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to fetch monthly sales" });
   }
 });

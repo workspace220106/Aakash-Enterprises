@@ -662,10 +662,13 @@ components:
           type: number
         quantitySold:
           type: integer
+        profit:
+          type: number
       required:
         - date
         - revenue
         - quantitySold
+        - profit
 
     MonthlySalesData:
       type: object
@@ -676,10 +679,13 @@ components:
           type: number
         quantitySold:
           type: integer
+        profit:
+          type: number
       required:
         - month
         - revenue
         - quantitySold
+        - profit
 
     TopProduct:
       type: object

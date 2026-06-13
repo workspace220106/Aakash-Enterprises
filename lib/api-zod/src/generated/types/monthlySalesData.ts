@@ -10,4 +10,5 @@ export interface MonthlySalesData {
   month: string;
   revenue: number;
   quantitySold: number;
+  profit: number;
 }

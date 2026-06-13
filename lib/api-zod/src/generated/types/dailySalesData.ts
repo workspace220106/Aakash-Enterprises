@@ -10,4 +10,5 @@ export interface DailySalesData {
   date: string;
   revenue: number;
   quantitySold: number;
+  profit: number;
 }

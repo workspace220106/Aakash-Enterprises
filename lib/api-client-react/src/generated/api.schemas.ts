@@ -114,12 +114,14 @@ export interface DailySalesData {
   date: string;
   revenue: number;
   quantitySold: number;
+  profit: number;
 }
 
 export interface MonthlySalesData {
   month: string;
   revenue: number;
   quantitySold: number;
+  profit: number;
 }
 
 export interface TopProduct {

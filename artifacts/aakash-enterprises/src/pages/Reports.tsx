@@ -1,6 +1,6 @@
 import { useGetDailySales, useGetMonthlySales, useGetTopProducts } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, Cell, AreaChart, Area } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -86,6 +86,68 @@ export default function Reports() {
                   />
                   <Line type="monotone" dataKey="quantitySold" stroke="hsl(var(--accent-foreground))" strokeWidth={4} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 8 }} />
                 </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      <div className="pt-4 border-t border-slate-200/60">
+        <h2 className="text-2xl font-display font-bold">Profit & Margins Analysis</h2>
+        <p className="text-muted-foreground text-sm mt-1">Detailed tracking of daily and monthly net earnings.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Daily Profit Chart */}
+        <div className="glass-panel p-6 border-t-4 border-t-emerald-500">
+          <h3 className="text-xl font-display font-bold mb-6 text-slate-800">Daily Net Profit (Last 30 Days)</h3>
+          <div className="h-64 sm:h-80 w-full">
+            {daily && (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={daily} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="rgb(16, 185, 129)" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="rgb(16, 185, 129)" stopOpacity={0.0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                  <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `₹${val}`} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                    formatter={(value: number) => [formatCurrency(value), 'Net Profit']}
+                  />
+                  <Area type="monotone" dataKey="profit" stroke="rgb(16, 185, 129)" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Profit Chart */}
+        <div className="glass-panel p-6 border-t-4 border-t-emerald-600">
+          <h3 className="text-xl font-display font-bold mb-6 text-slate-800">Monthly Net Profit (Last 12 Months)</h3>
+          <div className="h-64 sm:h-80 w-full">
+            {monthly && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthly} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                  <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `₹${val/1000}k`} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                  <Tooltip 
+                    cursor={{fill: 'hsl(var(--muted))', opacity: 0.4}}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                    formatter={(value: number) => [formatCurrency(value), 'Net Profit']}
+                  />
+                  <Bar dataKey="profit" radius={[6, 6, 0, 0]}>
+                    {monthly.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === monthly.length - 1 ? 'rgb(16, 185, 129)' : 'rgb(52, 211, 153)'} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </div>

@@ -307,6 +307,7 @@ export const GetDailySalesResponseItem = zod.object({
   date: zod.string(),
   revenue: zod.number(),
   quantitySold: zod.number(),
+  profit: zod.number(),
 });
 export const GetDailySalesResponse = zod.array(GetDailySalesResponseItem);
 
@@ -317,6 +318,7 @@ export const GetMonthlySalesResponseItem = zod.object({
   month: zod.string(),
   revenue: zod.number(),
   quantitySold: zod.number(),
+  profit: zod.number(),
 });
 export const GetMonthlySalesResponse = zod.array(GetMonthlySalesResponseItem);
 
