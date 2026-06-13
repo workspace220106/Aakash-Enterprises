@@ -7,10 +7,12 @@ import {
   History, 
   BarChart3,
   Droplets,
-  Coins
+  Coins,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -28,6 +30,35 @@ export interface SidebarContentProps {
 
 export function SidebarContent({ onItemClick }: SidebarContentProps) {
   const [location] = useLocation();
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User install choice: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   return (
     <div className="glass-panel w-full h-full flex flex-col pt-8 pb-6 px-4 bg-white/80 backdrop-blur-md lg:bg-transparent lg:backdrop-blur-none lg:border-none">
@@ -78,7 +109,16 @@ export function SidebarContent({ onItemClick }: SidebarContentProps) {
       </nav>
 
       {/* Bottom Status */}
-      <div className="mt-auto px-4">
+      <div className="mt-auto space-y-3 px-4">
+        {isInstallable && (
+          <button 
+            onClick={handleInstallClick}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/10 hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Install App</span>
+          </button>
+        )}
         <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-sm font-medium text-slate-600">System Online</span>

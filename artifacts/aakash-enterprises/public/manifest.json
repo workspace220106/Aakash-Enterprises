@@ -1,0 +1,22 @@
+{
+  "short_name": "Aakash Ent",
+  "name": "Aakash Enterprises Billing",
+  "description": "Billing and Point of Sale system for Aakash Enterprises.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090d16",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "portrait"
+}

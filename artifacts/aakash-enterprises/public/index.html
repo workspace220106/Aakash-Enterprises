@@ -8,18 +8,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#f02d3a" />
+    <meta name="theme-color" content="#4f46e5" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <link rel="apple-touch-icon" href="/images/icon-192.png" />
-    <script type="module" crossorigin src="/assets/index-D1ci0qSy.js"></script>
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script type="module" crossorigin src="/assets/index-BPJQS5tv.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-DVAF2cNs.js">
     <link rel="modulepreload" crossorigin href="/assets/motion-xhL0K3Cm.js">
-    <link rel="modulepreload" crossorigin href="/assets/ui-DgffnguX.js">
-    <link rel="modulepreload" crossorigin href="/assets/charts-COrjElpd.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-DmxLuC4m.css">
+    <link rel="modulepreload" crossorigin href="/assets/ui-DV4kBZj9.js">
+    <link rel="modulepreload" crossorigin href="/assets/charts-DGTPDbVs.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CORUn87G.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+            .catch((err) => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
