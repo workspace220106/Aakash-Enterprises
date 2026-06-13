@@ -166,47 +166,66 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
     if (!sale) return;
     setIsSharingPDF(true);
 
-    const newTab = window.open("", "_blank");
-    if (newTab) {
-      newTab.document.write("<p style='font-family: sans-serif; text-align: center; margin-top: 50px;'>Generating receipt PDF and preparing WhatsApp link... Please wait.</p>");
-    }
+    let newTab: Window | null = null;
 
     try {
       const doc = await generateReceiptPDF(sale);
-      const pdfBase64 = doc.output("datauristring").split(",")[1];
+      const pdfBlob = doc.output("blob");
+      const filename = `Receipt_${sale.id.toString().padStart(6, '0')}.pdf`;
+      const pdfFile = new File([pdfBlob], filename, { type: "application/pdf" });
 
-      // 2. Upload PDF to backend
-      const response = await fetch(`/api/sales/${sale.id}/pdf`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pdfBase64 }),
-      });
+      // Check if Web Share API is supported for files
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({
+          files: [pdfFile],
+          title: `Receipt #${sale.id.toString().padStart(6, '0')}`,
+          text: `Aakash Enterprises - Receipt for ₹${sale.total.toFixed(2)}`,
+        });
+      } else {
+        // Fallback for desktop: upload PDF and open WhatsApp web redirect link
+        newTab = window.open("", "_blank");
+        if (newTab) {
+          newTab.document.write("<p style='font-family: sans-serif; text-align: center; margin-top: 50px;'>Generating receipt PDF and preparing WhatsApp link... Please wait.</p>");
+        }
 
-      if (!response.ok) {
-        throw new Error("Failed to upload PDF");
-      }
+        const pdfBase64 = doc.output("datauristring").split(",")[1];
 
-      // 3. Open WhatsApp link in the pre-opened tab
-      const pdfUrl = `${window.location.origin}/api/sales/${sale.id}/pdf`;
-      const rawPhone = sale.customerPhone || "";
-      const cleanPhone = rawPhone.replace(/\D/g, "");
-      const messageText = encodeURIComponent(`*AAKASH ENTERPRISES*\nHello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)} in PDF format:\n${pdfUrl}`);
-      
-      const whatsappUrl = cleanPhone 
-        ? `https://wa.me/${cleanPhone}?text=${messageText}`
-        : `https://wa.me/?text=${messageText}`;
+        // 2. Upload PDF to backend
+        const response = await fetch(`/api/sales/${sale.id}/pdf`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pdfBase64 }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload PDF");
+        }
+
+        // 3. Open WhatsApp link in the pre-opened tab
+        const pdfUrl = `${window.location.origin}/api/sales/${sale.id}/pdf`;
+        const rawPhone = sale.customerPhone || "";
+        const cleanPhone = rawPhone.replace(/\D/g, "");
+        const messageText = encodeURIComponent(`*AAKASH ENTERPRISES*\nHello, here is your receipt #${sale.id.toString().padStart(6, '0')} for ₹${sale.total.toFixed(2)} in PDF format:\n${pdfUrl}`);
         
-      if (newTab) {
-        newTab.location.href = whatsappUrl;
+        const whatsappUrl = cleanPhone 
+          ? `https://wa.me/${cleanPhone}?text=${messageText}`
+          : `https://wa.me/?text=${messageText}`;
+          
+        if (newTab) {
+          newTab.location.href = whatsappUrl;
+        }
       }
     } catch (error) {
       console.error("Error generating/sharing PDF: ", error);
       if (newTab) {
         newTab.close();
       }
-      alert("Failed to share PDF receipt. Please try again.");
+      // Only show error alert if it's not a user-cancelled share action (AbortError)
+      if (error instanceof Error && error.name !== "AbortError") {
+        alert("Failed to share PDF receipt. Please try again.");
+      }
     } finally {
       setIsSharingPDF(false);
     }
@@ -214,13 +233,13 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white">
-        <div className="print:hidden p-4 border-b flex justify-between items-center bg-slate-50">
+      <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+        <div className="print:hidden p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
           <h2 className="font-bold flex items-center gap-2"><Printer className="w-4 h-4"/> Receipt</h2>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={isPrinting || isSharingPDF}><X className="w-4 h-4"/></Button>
         </div>
 
-        <div id="receipt-content" className="p-8 font-mono text-sm text-slate-800">
+        <div id="receipt-content" className="p-6 sm:p-8 font-mono text-sm text-slate-800 flex-1 overflow-y-auto">
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold uppercase tracking-widest">Aakash Enterprises</h1>
             <p className="text-xs text-slate-500">Retail & Wholesale Cold Drinks</p>
@@ -303,7 +322,7 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50 border-t print:hidden flex flex-col gap-2">
+        <div className="p-4 bg-slate-50 border-t print:hidden flex flex-col gap-2 shrink-0">
           <div className="flex gap-3">
             <Button 
               variant="outline" 

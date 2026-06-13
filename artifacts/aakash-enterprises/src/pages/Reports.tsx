@@ -21,7 +21,7 @@ export default function Reports() {
         {/* Monthly Revenue Bar Chart */}
         <div className="glass-panel p-6">
           <h3 className="text-xl font-display font-bold mb-6">Monthly Revenue (Last 12 Months)</h3>
-          <div className="h-80 w-full">
+          <div className="h-64 sm:h-80 w-full">
             {monthly && (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthly} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -47,7 +47,7 @@ export default function Reports() {
         {/* Top Products Horizontal Bar Chart */}
         <div className="glass-panel p-6">
           <h3 className="text-xl font-display font-bold mb-6">Top Selling Products (By Revenue)</h3>
-          <div className="h-80 w-full">
+          <div className="h-64 sm:h-80 w-full">
             {topProducts && (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topProducts} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
@@ -73,7 +73,7 @@ export default function Reports() {
         {/* Volume Trend Line Chart */}
         <div className="glass-panel p-6 lg:col-span-2 border-t-4 border-t-accent">
           <h3 className="text-xl font-display font-bold mb-6 text-slate-800">Daily Sales Volume (Units Sold)</h3>
-          <div className="h-80 w-full">
+          <div className="h-64 sm:h-80 w-full">
             {daily && (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={daily} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>

@@ -57,7 +57,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-display font-bold">Revenue Trend (30 Days)</h2>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="h-64 sm:h-[300px] w-full">
             {dailySales && dailySales.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={dailySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
