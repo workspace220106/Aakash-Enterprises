@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetProducts, useGetCustomers, useCreateSale, getGetProductsQueryKey, getGetDashboardStatsQueryKey, type SaleWithDetails } from "@workspace/api-client-react";
+import { 
+  useGetProducts, 
+  useGetCustomers, 
+  useCreateSale, 
+  getGetProductsQueryKey, 
+  getGetDashboardStatsQueryKey, 
+  getGetDailySalesQueryKey,
+  getGetMonthlySalesQueryKey,
+  getGetTopProductsQueryKey,
+  getGetSalesQueryKey,
+  getGetProfitMarginsQueryKey,
+  type SaleWithDetails 
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Search, ShoppingBag, Trash2, Plus, Minus, UserCircle } from "lucide-react";
@@ -21,6 +33,11 @@ export default function POS() {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getGetProductsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDailySalesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetMonthlySalesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTopProductsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetProfitMarginsQueryKey() });
         setCart([]);
         setSelectedCustomer("");
         setLastSale(data);

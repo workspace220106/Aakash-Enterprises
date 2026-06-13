@@ -107,7 +107,7 @@ router.get("/analytics/daily", async (req, res) => {
       db
         .select({
           id: salesTable.id,
-          date: sql<string>`DATE(${salesTable.date})`,
+          date: salesTable.date,
           total: salesTable.total,
         })
         .from(salesTable)
@@ -138,9 +138,18 @@ router.get("/analytics/daily", async (req, res) => {
       saleMetrics[saleId].quantitySold += qty;
     });
 
+    const formatDate = (d: Date) => {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d);
+    };
+
     const dailyData: Record<string, { date: string; revenue: number; quantitySold: number; profit: number }> = {};
     sales.forEach((sale) => {
-      const dateStr = sale.date;
+      const dateStr = formatDate(sale.date);
       const total = parseFloat(sale.total);
       const metrics = saleMetrics[sale.id] || { cost: 0, quantitySold: 0 };
       const profit = total - metrics.cost;
@@ -167,7 +176,7 @@ router.get("/analytics/monthly", async (req, res) => {
       db
         .select({
           id: salesTable.id,
-          month: sql<string>`TO_CHAR(${salesTable.date}, 'YYYY-MM')`,
+          date: salesTable.date,
           total: salesTable.total,
         })
         .from(salesTable),
@@ -195,9 +204,17 @@ router.get("/analytics/monthly", async (req, res) => {
       saleMetrics[saleId].quantitySold += qty;
     });
 
+    const formatMonth = (d: Date) => {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit'
+      }).format(d);
+    };
+
     const monthlyData: Record<string, { month: string; revenue: number; quantitySold: number; profit: number }> = {};
     sales.forEach((sale) => {
-      const monthStr = sale.month;
+      const monthStr = formatMonth(sale.date);
       const total = parseFloat(sale.total);
       const metrics = saleMetrics[sale.id] || { cost: 0, quantitySold: 0 };
       const profit = total - metrics.cost;

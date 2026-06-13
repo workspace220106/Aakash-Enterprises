@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { useGetSales, useDeleteSale, getGetSalesQueryKey, type SaleWithDetails } from "@workspace/api-client-react";
+import { 
+  useGetSales, 
+  useDeleteSale, 
+  getGetSalesQueryKey, 
+  getGetProductsQueryKey,
+  getGetDashboardStatsQueryKey,
+  getGetDailySalesQueryKey,
+  getGetMonthlySalesQueryKey,
+  getGetTopProductsQueryKey,
+  getGetProfitMarginsQueryKey,
+  type SaleWithDetails 
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Calendar, Trash2, FileText } from "lucide-react";
@@ -9,7 +20,19 @@ import { ReceiptDialog } from "@/components/ReceiptDialog";
 export default function Sales() {
   const { data: sales, isLoading } = useGetSales();
   const queryClient = useQueryClient();
-  const deleteMutation = useDeleteSale({ mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() }) } });
+  const deleteMutation = useDeleteSale({ 
+    mutation: { 
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetProductsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDailySalesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetMonthlySalesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTopProductsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetProfitMarginsQueryKey() });
+      } 
+    } 
+  });
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selectedSaleForReceipt, setSelectedSaleForReceipt] = useState<SaleWithDetails | null>(null);
