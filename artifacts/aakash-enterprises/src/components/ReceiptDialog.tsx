@@ -197,11 +197,14 @@ export function ReceiptDialog({ sale, open, onOpenChange }: ReceiptDialogProps) 
               .p-2 { padding: 6px; }
               table { border-collapse: collapse; }
               
+              @page {
+                margin: 0;
+              }
               @media print {
                 body {
-                  width: 100%;
+                  width: auto;
                   margin: 0;
-                  padding: 5px;
+                  padding: 8mm 6mm;
                 }
               }
             </style>
