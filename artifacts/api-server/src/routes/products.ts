@@ -26,6 +26,7 @@ router.get("/products", async (req, res) => {
       }))
     );
   } catch (err) {
+    console.error("Error fetching products:", err);
     res.status(500).json({ message: "Failed to fetch products" });
   }
 });
@@ -44,6 +45,7 @@ router.post("/products", async (req, res) => {
       createdAt: product.createdAt.toISOString(),
     });
   } catch (err) {
+    console.error("Error creating product:", err);
     res.status(500).json({ message: "Failed to create product" });
   }
 });
@@ -53,9 +55,10 @@ router.get("/products/:id", async (req, res) => {
   try {
     const [product] = await db.select().from(productsTable).where(eq(productsTable.id, parseInt(req.params.id)));
     if (!product) return res.status(404).json({ message: "Product not found" });
-    return res.json({ ...product, purchasePrice: parseFloat(product.purchasePrice), sellingPrice: parseFloat(product.sellingPrice), createdAt: product.createdAt.toISOString() }); // ✅ added return
-  } catch {
-    return res.status(500).json({ message: "Failed to fetch product" }); // ✅ added return
+    return res.json({ ...product, purchasePrice: parseFloat(product.purchasePrice), sellingPrice: parseFloat(product.sellingPrice), createdAt: product.createdAt.toISOString() });
+  } catch (err) {
+    console.error(`Error fetching product ${req.params.id}:`, err);
+    return res.status(500).json({ message: "Failed to fetch product" });
   }
 });
 
@@ -68,16 +71,18 @@ router.put("/products/:id", async (req, res) => {
       .where(eq(productsTable.id, parseInt(req.params.id)))
       .returning();
     if (!product) return res.status(404).json({ message: "Product not found" });
-    return res.json({ ...product, purchasePrice: parseFloat(product.purchasePrice), sellingPrice: parseFloat(product.sellingPrice), createdAt: product.createdAt.toISOString() }); // ✅ added return
-  } catch {
-    return res.status(500).json({ message: "Failed to update product" }); // ✅ added return
+    return res.json({ ...product, purchasePrice: parseFloat(product.purchasePrice), sellingPrice: parseFloat(product.sellingPrice), createdAt: product.createdAt.toISOString() });
+  } catch (err) {
+    console.error(`Error updating product ${req.params.id}:`, err);
+    return res.status(500).json({ message: "Failed to update product" });
   }
 });
 router.delete("/products/:id", async (req, res) => {
   try {
     await db.delete(productsTable).where(eq(productsTable.id, parseInt(req.params.id)));
     res.json({ message: "Product deleted" });
-  } catch {
+  } catch (err) {
+    console.error(`Error deleting product ${req.params.id}:`, err);
     res.status(500).json({ message: "Failed to delete product" });
   }
 });
